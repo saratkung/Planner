@@ -25,7 +25,7 @@ let active = null; // { feature, instance }
 // ---------- navigation ----------
 function buildNav() {
   const link = (f) =>
-    `<a href="#/${f.id}" data-route="${f.id}">${icon(f.icon)}<span>${f.label}</span>${
+    `<a href="#${f.id}" data-route="${f.id}">${icon(f.icon)}<span>${f.label}</span>${
       f.id === 'tasks' ? '<b class="badge" hidden></b>' : ''
     }</a>`;
   $('#nav').innerHTML = `<span class="nav-indicator"></span>${FEATURES.map(link).join('')}`;
@@ -97,7 +97,7 @@ function route() {
 }
 
 export function navigate(id) {
-  location.hash = `#/${id}`;
+  location.hash = `#${id}`;
 }
 
 // ---------- quick add menu ----------

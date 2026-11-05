@@ -7,7 +7,7 @@ import { openModal, confirmDialog } from '../ui/modal.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange } from '../pwa.js';
+import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange, pwaSupported, isEmbedded } from '../pwa.js';
 
 export function applyTheme(theme = store.state.settings.theme) {
   const root = document.documentElement;
@@ -24,6 +24,11 @@ export function isDark() {
 function installSection() {
   if (isStandalone())
     return `<div class="install-box done">📲 <div><b>ติดตั้งเป็นแอปแล้ว</b><p class="muted">ข้อมูลจะเก็บอยู่ในเครื่องนี้ ใช้ได้แม้ไม่มีอินเทอร์เน็ต</p></div></div>`;
+  if (!pwaSupported())
+    return `<div class="install-box">
+      <div class="install-head"><img src="icons/icon-192.png" alt="" width="44" height="44" />
+        <div><b>ติดตั้งบนมือถือ</b><p class="muted">หน้านี้เป็นเวอร์ชันทดลองใช้ จึงติดตั้งเป็นแอปไม่ได้ เมื่อเปิดจากเว็บจริง (GitHub Pages) จะมีปุ่มและวิธีติดตั้งแสดงตรงนี้</p></div></div>
+    </div>`;
   return `<div class="install-box">
     <div class="install-head"><img src="icons/icon-192.png" alt="" width="44" height="44" />
       <div><b>ติดตั้ง Planner บนมือถือ</b><p class="muted">เปิดจากไอคอนบนหน้าจอโฮม เต็มจอ ใช้งานออฟไลน์ได้</p></div></div>
@@ -70,7 +75,9 @@ export function openSettings({ focusInstall = false } = {}) {
       <div class="field">
         <span class="field-label">ข้อมูล (บันทึกไว้ในเบราว์เซอร์นี้)</span>
         <div class="chips">
-          <button class="btn btn-outline btn-sm" data-export>${icon('download')}สำรองข้อมูล (.json)</button>
+          ${isEmbedded()
+            ? `<p class="muted" style="font-size:13px">การสำรองเป็นไฟล์ใช้ได้เมื่อเปิดจากเว็บจริง</p>`
+            : `<button class="btn btn-outline btn-sm" data-export>${icon('download')}สำรองข้อมูล (.json)</button>`}
           <label class="btn btn-outline btn-sm" style="cursor:pointer">${icon('upload')}นำเข้าข้อมูล
             <input type="file" accept="application/json,.json" data-import hidden /></label>
         </div>
@@ -106,7 +113,7 @@ export function openSettings({ focusInstall = false } = {}) {
       });
       bindSegmented($('[data-seg="week"]', root), (v) => store.setSettings({ weekStart: Number(v) }));
 
-      $('[data-export]', root).addEventListener('click', () => {
+      $('[data-export]', root)?.addEventListener('click', () => {
         const blob = new Blob([store.exportJSON()], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);

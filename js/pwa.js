@@ -4,6 +4,13 @@
 import { toast } from './ui/toast.js';
 
 let deferredPrompt = null;
+let swOk = false; // service worker registered (needed for install/offline)
+
+/** หน้านี้ถูกเปิดอยู่ใน iframe (เช่นหน้าตัวอย่าง) ซึ่งดาวน์โหลดไฟล์/ติดตั้งไม่ได้ */
+export const isEmbedded = () => {
+  try { return window.self !== window.top; } catch (_) { return true; }
+};
+export const pwaSupported = () => swOk;
 const listeners = new Set();
 const notify = () => listeners.forEach((fn) => fn());
 
@@ -63,6 +70,9 @@ export function setupPWA({ onSuggestInstall } = {}) {
     window.addEventListener('load', async () => {
       try {
         const reg = await navigator.serviceWorker.register('./sw.js');
+        swOk = true;
+        notify();
+        maybeHint();
         const askReload = (sw) =>
           toast('มีเวอร์ชันใหม่ของแอป', {
             icon: '🆕',
@@ -89,12 +99,13 @@ export function setupPWA({ onSuggestInstall } = {}) {
     });
   }
 
-  // แนะนำให้ติดตั้งครั้งเดียว เมื่อเปิดบนมือถือในเบราว์เซอร์
-  const KEY = 'planner.installHint';
-  const mobile = window.matchMedia('(max-width: 760px)').matches;
-  let seen = false;
-  try { seen = localStorage.getItem(KEY) === '1'; } catch (_) {}
-  if (mobile && !isStandalone() && !seen) {
+  // แนะนำให้ติดตั้งครั้งเดียว เมื่อเปิดบนมือถือในเบราว์เซอร์ (และติดตั้งได้จริง)
+  function maybeHint() {
+    const KEY = 'planner.installHint';
+    const mobile = window.matchMedia('(max-width: 760px)').matches;
+    let seen = false;
+    try { seen = localStorage.getItem(KEY) === '1'; } catch (_) {}
+    if (!mobile || isStandalone() || seen || isEmbedded()) return;
     setTimeout(() => {
       try { localStorage.setItem(KEY, '1'); } catch (_) {}
       toast('ติดตั้ง Planner เป็นแอปบนมือถือได้นะ', {
