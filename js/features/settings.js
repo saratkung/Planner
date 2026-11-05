@@ -7,6 +7,7 @@ import { openModal, confirmDialog } from '../ui/modal.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
+import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange } from '../pwa.js';
 
 export function applyTheme(theme = store.state.settings.theme) {
   const root = document.documentElement;
@@ -20,10 +21,24 @@ export function isDark() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-export function openSettings() {
+function installSection() {
+  if (isStandalone())
+    return `<div class="install-box done">📲 <div><b>ติดตั้งเป็นแอปแล้ว</b><p class="muted">ข้อมูลจะเก็บอยู่ในเครื่องนี้ ใช้ได้แม้ไม่มีอินเทอร์เน็ต</p></div></div>`;
+  return `<div class="install-box">
+    <div class="install-head"><img src="icons/icon-192.png" alt="" width="44" height="44" />
+      <div><b>ติดตั้ง Planner บนมือถือ</b><p class="muted">เปิดจากไอคอนบนหน้าจอโฮม เต็มจอ ใช้งานออฟไลน์ได้</p></div></div>
+    ${canPromptInstall()
+      ? `<button class="btn btn-primary btn-sm" data-install>${icon('download')}ติดตั้งแอป</button>`
+      : `<ol class="install-steps">${installSteps().map((t) => `<li>${t}</li>`).join('')}</ol>`}
+  </div>`;
+}
+
+export function openSettings({ focusInstall = false } = {}) {
+  let offInstall = null;
   const s = store.state.settings;
   const body = `
     <div class="form-grid">
+      <div id="st-install">${installSection()}</div>
       <div class="field">
         <label for="st-name">ชื่อของคุณ</label>
         <input class="input" id="st-name" value="${esc(s.name)}" placeholder="ใช้แสดงคำทักทายในหน้าภาพรวม" maxlength="40" />
@@ -71,7 +86,19 @@ export function openSettings() {
     title: '⚙️ ตั้งค่า',
     body,
     footer: `<span class="spacer"></span><button class="btn btn-primary" data-close>${icon('check')}เสร็จสิ้น</button>`,
+    onClose: () => offInstall?.(),
     onMount(root, close) {
+      const inst = $('#st-install', root);
+      const bindInstall = () =>
+        $('[data-install]', inst)?.addEventListener('click', async () => {
+          if (await promptInstall()) close();
+        });
+      bindInstall();
+      offInstall = onInstallChange(() => {
+        inst.innerHTML = installSection();
+        bindInstall();
+      });
+      if (focusInstall) inst.firstElementChild.classList.add('pop');
       $('#st-name', root).addEventListener('change', (e) => store.setSettings({ name: e.target.value.trim() }));
       bindSegmented($('[data-seg="theme"]', root), (v) => {
         store.setSettings({ theme: v });

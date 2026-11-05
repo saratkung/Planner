@@ -10,6 +10,7 @@ import { openTaskForm } from './forms/taskForm.js';
 import { openEventForm } from './forms/eventForm.js';
 import { openGoalForm } from './forms/goalForm.js';
 import { openSettings, applyTheme, isDark } from './features/settings.js';
+import { setupPWA } from './pwa.js';
 
 import dashboard from './features/dashboard.js';
 import tasks from './features/tasks.js';
@@ -167,8 +168,9 @@ function init() {
   setupShortcuts();
 
   $('#btn-theme').addEventListener('click', toggleTheme);
-  $('#btn-settings').addEventListener('click', openSettings);
-  $('#btn-settings-m').addEventListener('click', openSettings);
+  $('#btn-settings').addEventListener('click', () => openSettings());
+  $('#btn-settings-m').addEventListener('click', () => openSettings());
+  setupPWA({ onSuggestInstall: () => openSettings({ focusInstall: true }) });
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);
 

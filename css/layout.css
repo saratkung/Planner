@@ -159,7 +159,12 @@
 @media (max-width: 760px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .main { padding: 16px 16px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom)); }
+  .main {
+    padding: calc(16px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  /* iOS ซูมเมื่อช่องกรอกตัวอักษรเล็กกว่า 16px */
+  .input, .select, .textarea { font-size: 16px; }
   .topbar { margin-bottom: 16px; }
   .topbar h1 { font-size: 22px; }
   .topbar-title p { font-size: 13px; }
@@ -251,4 +256,10 @@
   }
   .modal-head { position: relative; padding-top: 24px; }
   .row-3 { grid-template-columns: 1fr 1fr; }
+}
+
+/* เปิดแบบแอป (ติดตั้งบนหน้าจอโฮม) */
+@media (display-mode: standalone) {
+  body { overscroll-behavior-y: none; -webkit-user-select: none; user-select: none; }
+  input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 }
