@@ -1,0 +1,145 @@
+/* ==========================================================
+   animations.css — keyframes & motion utilities
+   ========================================================== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.85); }
+  70%  { opacity: 1; transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+@keyframes slideOut {
+  to { opacity: 0; transform: translateX(40px) scale(0.96); height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
+}
+@keyframes collapse {
+  to { opacity: 0; transform: scale(0.9); }
+}
+@keyframes slideFromRight {
+  from { opacity: 0; transform: translateX(36px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slideFromLeft {
+  from { opacity: 0; transform: translateX(-36px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes checkPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.75); }
+  70%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes drawCheck {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes ripple {
+  from { transform: scale(0); opacity: 0.35; }
+  to   { transform: scale(2.6); opacity: 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -40px) scale(1.08); }
+  66%      { transform: translate(-25px, 20px) scale(0.95); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 55%, transparent); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-8deg); }
+  75%      { transform: rotate(8deg); }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: none; }
+}
+@keyframes sheetDown {
+  to { transform: translateY(100%); }
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes modalOut {
+  to { opacity: 0; transform: translateY(10px) scale(0.97); }
+}
+@keyframes growBar {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes growX {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* utilities */
+.enter {
+  animation: fadeUp 0.5s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.pop {
+  animation: popIn 0.45s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.leaving {
+  animation: slideOut 0.38s var(--ease) forwards;
+  overflow: hidden;
+  pointer-events: none;
+}
+.leaving-fade {
+  animation: collapse 0.3s var(--ease) forwards;
+  pointer-events: none;
+}
+.slide-next { animation: slideFromRight 0.42s var(--ease) both; }
+.slide-prev { animation: slideFromLeft 0.42s var(--ease) both; }
+.shake { animation: shake 0.4s ease; }
+
+.view-enter > * {
+  animation: fadeUp 0.55s var(--ease) both;
+}
+.view-enter > *:nth-child(2) { animation-delay: 60ms; }
+.view-enter > *:nth-child(3) { animation-delay: 120ms; }
+.view-enter > *:nth-child(4) { animation-delay: 180ms; }
+.view-enter > *:nth-child(5) { animation-delay: 240ms; }
+
+.ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  margin: -50px 0 0 -50px;
+  background: currentColor;
+  pointer-events: none;
+  animation: ripple 0.6s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

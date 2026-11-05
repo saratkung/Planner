@@ -1,0 +1,24 @@
+{
+  "name": "Life Planner — วางแผนชีวิต",
+  "short_name": "Planner",
+  "description": "วางแผนชีวิต งาน เป้าหมาย และตารางเวลา ในที่เดียว",
+  "lang": "th",
+  "id": "./",
+  "start_url": "./#/dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f5fb",
+  "theme_color": "#6366f1",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "งานวันนี้", "url": "./#/tasks", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "ตารางเวลา", "url": "./#/schedule", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "เป้าหมาย", "url": "./#/goals", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Life Planner</title>
+  <meta name="description" content="วางแผนชีวิต งาน เป้าหมาย และตารางเวลา ในที่เดียว" />
+  <meta name="theme-color" content="#f4f5fb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/favicon-64.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Planner" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/views.css" />
+  <script>
+    // ตั้งธีมก่อนโหลดหน้า ป้องกันการกระพริบ
+    try {
+      const s = JSON.parse(localStorage.getItem('planner.v1') || '{}').settings;
+      if (s && (s.theme === 'light' || s.theme === 'dark')) document.documentElement.dataset.theme = s.theme;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">🗓️</div>
+        <div>
+          <div class="brand-name">Life Planner</div>
+          <div class="brand-sub">วางแผนชีวิตให้ชัดเจน</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav" aria-label="เมนูหลัก"></nav>
+      <div class="sidebar-foot">
+        <button class="btn btn-ghost btn-block" id="btn-settings" type="button"></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1 id="page-title">ภาพรวม</h1>
+          <p id="page-sub" class="muted"></p>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="btn-theme" type="button" aria-label="สลับธีม"></button>
+          <button class="icon-btn only-mobile" id="btn-settings-m" type="button" aria-label="ตั้งค่า"></button>
+          <div class="quick-add">
+            <button class="btn btn-primary" id="btn-quick" type="button" aria-haspopup="menu" aria-expanded="false"></button>
+            <div class="menu" id="quick-menu" role="menu" hidden></div>
+          </div>
+        </div>
+      </header>
+      <section id="view" class="view" aria-live="polite"></section>
+    </main>
+
+    <nav class="tabbar" id="tabbar" aria-label="เมนูหลัก (มือถือ)"></nav>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
