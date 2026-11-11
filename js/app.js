@@ -25,7 +25,7 @@ import goals from './features/goals.js';
 import meetings from './features/meetings.js';
 
 const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals];
-const viewEl = $('#view');
+let viewEl = $('#view');
 let active = null; // { feature, instance }
 
 // ---------- navigation ----------
@@ -87,8 +87,12 @@ function route() {
   if (active?.feature === feature) return;
 
   active?.instance?.unmount?.();
+  // ใช้ container ใหม่ทุกครั้งที่เปลี่ยนหน้า: listener ของหน้าเดิมจะไม่ค้าง
+  // (ถ้าใช้ตัวเดิม การเข้าหน้าเดิมซ้ำจะทำให้กดครั้งเดียวทำงานซ้ำหลายรอบ)
+  const fresh = viewEl.cloneNode(false);
+  viewEl.replaceWith(fresh);
+  viewEl = fresh;
   viewEl.classList.remove('view-enter');
-  viewEl.innerHTML = '';
   viewEl.dataset.view = feature.id;
 
   active = { feature, instance: null };

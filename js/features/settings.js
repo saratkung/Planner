@@ -74,6 +74,17 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
           { name: 'week', block: true },
         )}
       </div>
+      <div class="row">
+        <div class="field">
+          <label for="st-ws">เริ่มงาน</label>
+          <input class="input" type="time" id="st-ws" value="${s.workStart || '08:30'}" />
+        </div>
+        <div class="field">
+          <label for="st-we">เลิกงาน</label>
+          <input class="input" type="time" id="st-we" value="${s.workEnd || '17:30'}" />
+        </div>
+      </div>
+      <p class="kbd-hint">ใช้หาช่วงเวลาว่างตอน "วางแผนวันนี้"</p>
       <div class="divider"></div>
       <div class="field">
         <span class="field-label">ข้อมูล (บันทึกไว้ในเบราว์เซอร์นี้)</span>
@@ -124,6 +135,13 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
         applyTheme(v);
       });
       bindSegmented($('[data-seg="week"]', root), (v) => store.setSettings({ weekStart: Number(v) }));
+      const saveHours = () => {
+        const ws = $('#st-ws', root).value;
+        const we = $('#st-we', root).value;
+        if (ws && we && we > ws) store.setSettings({ workStart: ws, workEnd: we });
+      };
+      $('#st-ws', root).addEventListener('change', saveHours);
+      $('#st-we', root).addEventListener('change', saveHours);
 
       $('[data-export]', root)?.addEventListener('click', () => {
         const blob = new Blob([store.exportJSON()], { type: 'application/json' });

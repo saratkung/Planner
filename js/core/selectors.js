@@ -173,3 +173,31 @@ export function minutesOf(ev, key) {
 export function actionItems(eventId, key) {
   return store.state.tasks.filter((t) => t.meetingId === eventId && (!key || t.meetingDate === key));
 }
+
+// ---------------- daily planning ----------------
+
+/** ช่วงเวลาว่างในเวลางาน (อย่างน้อย minMins นาที) */
+export function freeSlots(key, { minMins = 30 } = {}) {
+  const { workStart = '08:30', workEnd = '17:30' } = store.state.settings;
+  const ws = timeToMin(workStart);
+  const we = timeToMin(workEnd);
+  const busy = eventsOn(key)
+    .filter((e) => !e.allDay)
+    .map((e) => [Math.max(ws, timeToMin(e.start)), Math.min(we, timeToMin(e.end))])
+    .filter(([s, e]) => e > s)
+    .sort((a, b) => a[0] - b[0]);
+  const slots = [];
+  let cur = ws;
+  busy.forEach(([s, e]) => {
+    if (s - cur >= minMins) slots.push({ start: cur, end: s, mins: s - cur });
+    cur = Math.max(cur, e);
+  });
+  if (we - cur >= minMins) slots.push({ start: cur, end: we, mins: we - cur });
+  return { slots, busy, ws, we };
+}
+
+/** งานสำคัญ (focus) ของวันนั้น ที่ยังมีอยู่ */
+export function focusTasks(key) {
+  const ids = store.day(key).focus || [];
+  return ids.map((id) => store.find('tasks', id)).filter(Boolean);
+}

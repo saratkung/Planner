@@ -18,6 +18,8 @@ import { openEventForm } from '../forms/eventForm.js';
 import { openGoalForm } from '../forms/goalForm.js';
 import { openMeeting, linkLabel } from '../forms/meetingRoom.js';
 import { toast } from '../ui/toast.js';
+import { dayMoment, openPlanDay, openReviewDay, toggleFocus, isFocus, star, MAX_FOCUS } from './dayplan.js';
+import { focusTasks } from '../core/selectors.js';
 
 function quoteOfDay() {
   const d = new Date();
@@ -54,7 +56,11 @@ export default {
       const goals = s.goals.map((g) => ({ g, p: goalProgress(g) }));
       const avgGoal = goals.length ? Math.round(goals.reduce((a, x) => a + x.p.pct, 0) / goals.length) : 0;
       const st = streak();
-      const list = [...sortTasks(overdue), ...sortTasks(todays)];
+      const focus = focusTasks(today);
+      const focusIds = new Set(focus.map((t) => t.id));
+      const list = [...sortTasks(overdue), ...sortTasks(todays)].filter((t) => !focusIds.has(t.id));
+      const moment = dayMoment();
+      const dayInfo = store.day(today);
 
       root.innerHTML = `
         <div class="dash">
@@ -70,9 +76,12 @@ export default {
               }</h2>
               <p class="hero-quote">“${quoteOfDay()}”</p>
               <div class="hero-actions">
-                <button class="btn btn-light" data-act="task">${icon('plus')}เพิ่มงาน</button>
+                ${moment === 'plan' ? `<button class="btn btn-gold" data-act="plan">🌅 วางแผนวันนี้</button>` : ''}
+                ${moment === 'review' ? `<button class="btn btn-gold" data-act="review">🌙 สรุปวันนี้</button>` : ''}
+                <button class="btn ${moment ? 'btn-glass' : 'btn-light'}" data-act="task">${icon('plus')}เพิ่มงาน</button>
                 <button class="btn btn-glass" data-act="event">${icon('calendar')}เพิ่มนัดหมาย</button>
               </div>
+              ${dayInfo.reviewed ? `<p class="hero-done">✨ ปิดวันแล้ว${dayInfo.mood ? ` · ${['', '😣', '😮‍💨', '😐', '😊', '🤩'][dayInfo.mood]}` : ''}</p>` : ''}
             </div>
             <div class="hero-art" aria-hidden="true">
               <div class="hero-orbit"><span>🎯</span><span>📅</span><span>✅</span></div>
@@ -125,7 +134,14 @@ export default {
               <form class="quick-input" data-quick>
                 ${icon('plus')}<input class="input" placeholder="เพิ่มงานวันนี้ แล้วกด Enter" maxlength="140" aria-label="เพิ่มงานวันนี้" />
               </form>
-              ${list.length ? `<ul class="mini-tasks">${list.map((t) => miniTask(t, track)).join('')}</ul>` : emptyState('🎉', 'ไม่มีงานค้าง', 'พักผ่อนได้ หรือเพิ่มงานใหม่ด้านบน', true)}
+              <div class="focus-box">
+                <p class="focus-title">⭐ งานสำคัญวันนี้ <span class="muted">${focus.length}/${MAX_FOCUS}</span>
+                  ${dayInfo.planned ? '' : `<button type="button" class="link-btn" data-act="plan">วางแผนวันนี้</button>`}</p>
+                ${focus.length
+                  ? `<ul class="mini-tasks">${focus.map((t) => miniTask(t, track, true)).join('')}</ul>`
+                  : `<p class="muted focus-empty">แตะ ☆ หน้างานด้านล่างเพื่อเลือกงานที่สำคัญที่สุด (สูงสุด ${MAX_FOCUS} งาน)</p>`}
+              </div>
+              ${list.length ? `<ul class="mini-tasks">${list.map((t) => miniTask(t, track)).join('')}</ul>` : focus.length ? '' : emptyState('🎉', 'ไม่มีงานค้าง', 'พักผ่อนได้ หรือเพิ่มงานใหม่ด้านบน', true)}
             </div>
           </section>
 
@@ -164,6 +180,12 @@ export default {
     };
 
     root.addEventListener('click', (e) => {
+      const starBtn = e.target.closest('[data-star]');
+      if (starBtn) {
+        const id = starBtn.closest('[data-task]').dataset.task;
+        if (toggleFocus(id)) starBtn.classList.add('pop-star');
+        return;
+      }
       const check = e.target.closest('[data-check]');
       if (check) {
         const id = check.closest('[data-task]').dataset.task;
@@ -184,6 +206,8 @@ export default {
         return;
       }
       const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'plan') return openPlanDay();
+      if (act === 'review') return openReviewDay();
       if (act === 'task') return openTaskForm();
       if (act === 'event') return openEventForm();
       if (act === 'goal') return openGoalForm();
@@ -245,10 +269,12 @@ function renderTimeline(events, now, track) {
     .join('');
 }
 
-function miniTask(t, track) {
-  const { cls, style } = track.attrs('t' + t.id);
+function miniTask(t, track, focused = false) {
+  const { cls, style } = track.attrs((focused ? 'f' : 't') + t.id);
   const over = isOverdue(t);
-  return `<li class="mini-task${t.done ? ' is-done' : ''}${cls}"${style} data-task="${t.id}">
+  const on = focused || isFocus(t.id);
+  return `<li class="mini-task${t.done ? ' is-done' : ''}${focused ? ' is-focus' : ''}${cls}"${style} data-task="${t.id}">
+    <button type="button" class="star-btn${on ? ' on' : ''}" data-star aria-pressed="${on}" aria-label="${on ? 'เอาออกจากงานสำคัญ' : 'ตั้งเป็นงานสำคัญ'}">${star(on)}</button>
     ${checkbox(t.done, { round: true, label: t.title })}
     <span class="mini-title">${esc(t.title)}</span>
     ${over ? '<span class="tag bad">เลยกำหนด</span>' : ''}

@@ -10,6 +10,7 @@ import { icon } from '../ui/icons.js';
 import { checkbox, emptyState, segmented, bindSegmented, bar, animateMeters, meterMemory, moveSegIndicator } from '../ui/widgets.js';
 import { openTaskForm } from '../forms/taskForm.js';
 import { toast } from '../ui/toast.js';
+import { isFocus } from './dayplan.js';
 
 const FILTERS = [
   { id: 'today', label: 'วันนี้' },
@@ -263,6 +264,7 @@ function taskRow(t, track) {
           <span class="tag">${c.emoji} ${c.label}</span>
           ${goal ? `<span class="tag" style="color:${goal.color}">${icon('target')}${esc(goal.title)}</span>` : ''}
           ${meeting ? `<span class="tag">${icon('users')}จากประชุม ${esc(meeting.title)}</span>` : ''}
+          ${!t.done && isFocus(t.id) ? '<span class="tag gold">⭐ สำคัญวันนี้</span>' : ''}
           ${t.notes ? `<span class="tag" title="${esc(t.notes)}">${icon('note')}</span>` : ''}
         </div>
       </div>
