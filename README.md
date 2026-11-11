@@ -56,7 +56,7 @@ confetti ชุดใหญ่เมื่อเป้าหมายครบ 1
 
 แอปนี้เป็น Progressive Web App ติดตั้งลงหน้าจอโฮมได้ เปิดแบบเต็มจอเหมือนแอปทั่วไป และ**ใช้งานได้แม้ไม่มีอินเทอร์เน็ต**
 
-1. นำเว็บขึ้นออนไลน์ด้วย GitHub Pages (ดูหัวข้อด้านล่าง) จะได้ลิงก์ เช่น `https://saratkung.github.io/Planner/`
+1. นำเว็บขึ้นออนไลน์ด้วย GitHub Pages (ดูหัวข้อด้านล่าง) จะได้ลิงก์ เช่น `https://saratkung.github.io/plannercsd/`
 2. เปิดลิงก์นั้นบนมือถือ
    - **iPhone / iPad**: เปิดด้วย Safari → ปุ่มแชร์ → "เพิ่มไปยังหน้าจอโฮม"
    - **Android**: เปิดด้วย Chrome → เมนู ⋮ → "ติดตั้งแอป" (หรือกดปุ่ม "ติดตั้งแอป" ในหน้าตั้งค่าของ Planner)
@@ -79,7 +79,7 @@ npx serve .
 จากนั้นเปิด <http://localhost:8080>
 
 **นำขึ้นเว็บด้วย GitHub Pages:** ไปที่ repo → **Settings → Pages** → Source: **Deploy from a branch** →
-Branch: **`main`** / โฟลเดอร์ **`/ (root)`** → Save รอประมาณ 1–2 นาที จะได้ลิงก์ `https://<username>.github.io/Planner/`
+Branch: **`main`** / โฟลเดอร์ **`/ (root)`** → Save รอประมาณ 1–2 นาที จะได้ลิงก์ `https://saratkung.github.io/plannercsd/`
 (หรือใช้ static hosting อื่น เช่น Netlify / Vercel ก็ได้)
 
 ## 🧱 โครงสร้างโปรเจกต์ (แยกตามฟังก์ชัน)
