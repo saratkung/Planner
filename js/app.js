@@ -12,6 +12,7 @@ import { openGoalForm } from './forms/goalForm.js';
 import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
 import { splashStep, hideSplash } from './ui/splash.js';
+import { setupLock, isLocked } from './ui/lock.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
 import { setupDrive } from './sync/drive.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
@@ -160,7 +161,7 @@ function toggleTheme() {
 // ---------- keyboard shortcuts ----------
 function setupShortcuts() {
   document.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || isModalOpen()) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || isModalOpen() || isLocked()) return;
     if (e.target.closest('input, textarea, select, [contenteditable]')) return;
     const k = e.key.toLowerCase();
     if (k === 'n') { e.preventDefault(); openTaskForm(); }
@@ -217,6 +218,7 @@ function init() {
   setupPWA({ onSuggestInstall: () => openSettings({ focusInstall: true }) });
   setupGcal();
   setupDrive();
+  setupLock();
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);

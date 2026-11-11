@@ -8,6 +8,7 @@ import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
+import { setupPin, disablePin, verifyPin, lockNow, setLockAfter, lockSupported } from '../ui/lock.js';
 import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange, pwaSupported, isEmbedded } from '../pwa.js';
 
 export function applyTheme(theme = store.state.settings.theme) {
@@ -39,6 +40,27 @@ function installSection() {
   </div>`;
 }
 
+function lockSectionHTML() {
+  const l = store.state.settings.lock;
+  const head = `<div class="install-head"><span class="gc-sub-ico">🔒</span><div><b>ล็อกแอปด้วย PIN</b>
+    <p class="muted">กันคนที่หยิบมือถือไปเปิดดู (ข้อมูลในเครื่องไม่ได้ถูกเข้ารหัส)</p></div></div>`;
+  if (!lockSupported()) return `<div class="gc-box">${head}<p class="muted gc-note">ใช้ได้เมื่อเปิดผ่าน https (เว็บจริง)</p></div>`;
+  if (!l.enabled)
+    return `<div class="gc-box">${head}<button class="btn btn-primary btn-sm" type="button" data-lock="set">🔒 ตั้ง PIN</button></div>`;
+  const opts = [[0, 'ทันที'], [1, '1 นาที'], [5, '5 นาที'], [15, '15 นาที']];
+  return `<div class="gc-box">${head}
+    <p class="gc-state"><span class="gc-dot ok"></span>เปิดใช้อยู่</p>
+    <div class="field">
+      <label for="lk-after">ล็อกเมื่อออกจากแอปนานกว่า</label>
+      <select class="select" id="lk-after">${opts.map(([v, t]) => `<option value="${v}" ${Number(l.after) === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    </div>
+    <div class="chips">
+      <button class="btn btn-outline btn-sm" type="button" data-lock="now">ล็อกตอนนี้</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-lock="change">เปลี่ยน PIN</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-lock="off">ปิดการล็อก</button>
+    </div></div>`;
+}
+
 export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
   let offInstall = null;
   let offGcal = null;
@@ -47,6 +69,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
     <div class="form-grid">
       <div id="st-install">${installSection()}</div>
       ${gcalSectionHTML()}
+      ${lockSectionHTML()}
       <div class="field">
         <label for="st-name">ชื่อของคุณ</label>
         <input class="input" id="st-name" value="${esc(s.name)}" placeholder="ใช้แสดงคำทักทายในหน้าภาพรวม" maxlength="40" />
@@ -124,6 +147,16 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       });
       if (focusInstall) inst.firstElementChild.classList.add('pop');
       offGcal = bindGcalSection(root, { closeSettings: close });
+      $('#lk-after', root)?.addEventListener('change', (e) => setLockAfter(e.target.value));
+      root.addEventListener('click', (e) => {
+        const act = e.target.closest('[data-lock]')?.dataset.lock;
+        if (!act) return;
+        close();
+        if (act === 'set') setupPin();
+        if (act === 'now') setTimeout(lockNow, 280);
+        if (act === 'change') verifyPin('ใส่ PIN เดิม', setupPin);
+        if (act === 'off') disablePin();
+      });
       if (focusGcal) {
         const box = $('#gc-box', root);
         box.classList.add('pop');

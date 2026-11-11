@@ -540,3 +540,75 @@
 .install-box .btn { align-self: flex-start; }
 .install-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--text-2); }
 .install-steps b { color: var(--text); }
+
+/* ---------- PIN lock ---------- */
+.lockscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+  color: #f3f0ff;
+  background:
+    radial-gradient(60% 45% at 50% 30%, rgba(130, 112, 220, 0.5) 0%, transparent 70%),
+    linear-gradient(160deg, #1b1840 0%, #2a2563 50%, #3b3290 100%);
+  animation: fadeIn 0.3s ease both;
+}
+.lockscreen.behind { z-index: 50; }
+.lock-inner { display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(300px, 100%); }
+.lock-logo {
+  width: 84px;
+  height: 84px;
+  border-radius: 22px;
+  margin-bottom: 10px;
+  box-shadow: 0 16px 40px -14px rgba(10, 8, 30, 0.8), 0 0 0 2px rgba(227, 178, 60, 0.5);
+  animation: popIn 0.6s var(--spring) both;
+}
+.pin-title { font-family: var(--font-head); font-weight: 600; font-size: 17px; text-align: center; min-height: 1.4em; }
+.pin-sub { font-size: 13px; min-height: 1.5em; text-align: center; opacity: 0.8; }
+.lockscreen .pin-sub { color: #ffd2dc; }
+.pin-dots { display: flex; gap: 16px; margin: 10px 0 22px; }
+.pin-dots i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0.6;
+  transition: background-color 0.15s, transform 0.2s var(--spring), opacity 0.15s;
+}
+.pin-dots i.on { background: currentColor; opacity: 1; transform: scale(1.15); }
+.pin-dots.wrong { animation: shake 0.4s ease; color: var(--bad); }
+.lockscreen.unlocking .pin-dots i { background: #e3b23c; border-color: #e3b23c; opacity: 1; }
+.lockscreen.unlocking { animation: lockOut 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards; pointer-events: none; }
+@keyframes lockOut { to { opacity: 0; transform: scale(1.08); filter: blur(6px); } }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px 22px; }
+.pin-key {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 0;
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 500;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.15s, transform 0.15s;
+}
+.pin-key:hover { background: rgba(255, 255, 255, 0.18); }
+.pin-key.tap { animation: keyTap 0.25s ease; }
+@keyframes keyTap { 50% { transform: scale(0.9); background: rgba(255, 255, 255, 0.3); } }
+.pin-del { background: transparent; font-size: 22px; }
+.pin-forgot { margin-top: 18px; color: #d4cbff; }
+.cooldown .pin-pad { opacity: 0.4; pointer-events: none; }
+.pin-modal { display: flex; flex-direction: column; align-items: center; padding: 4px 0 8px; color: var(--text); }
+.pin-modal .pin-key { background: var(--surface-2); border: 1px solid var(--border); }
+.pin-modal .pin-key:hover { background: var(--accent-soft); }
+.pin-modal .pin-del { background: transparent; border-color: transparent; }
+.pin-modal .pin-sub { color: var(--text-2); }
+.pin-modal .pin-dots { color: var(--accent); }
+@media (max-height: 640px) {
+  .pin-pad { grid-template-columns: repeat(3, 62px); gap: 10px 18px; }
+  .pin-key { width: 62px; height: 62px; font-size: 22px; }
+  .lock-logo { width: 64px; height: 64px; }
+}
