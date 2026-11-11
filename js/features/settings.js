@@ -86,7 +86,7 @@ export function openSettings({ focusInstall = false } = {}) {
           <button class="btn btn-danger btn-sm" data-clear>${icon('trash')}ล้างข้อมูลทั้งหมด</button>
         </div>
       </div>
-      <p class="kbd-hint">⌨️ คีย์ลัด: <b>N</b> งานใหม่ · <b>E</b> นัดหมายใหม่ · <b>G</b> เป้าหมายใหม่ · <b>1–5</b> สลับหน้า · <b>T</b> สลับธีม</p>
+      <p class="kbd-hint">⌨️ คีย์ลัด: <b>N</b> งานใหม่ · <b>M</b> นัดประชุม · <b>E</b> นัดหมายใหม่ · <b>G</b> เป้าหมายใหม่ · <b>1–6</b> สลับหน้า · <b>T</b> สลับธีม</p>
     </div>`;
 
   openModal({

@@ -17,8 +17,9 @@ import tasks from './features/tasks.js';
 import calendar from './features/calendar.js';
 import schedule from './features/schedule.js';
 import goals from './features/goals.js';
+import meetings from './features/meetings.js';
 
-const FEATURES = [dashboard, tasks, calendar, schedule, goals];
+const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals];
 const viewEl = $('#view');
 let active = null; // { feature, instance }
 
@@ -35,6 +36,7 @@ function buildNav() {
   $('#btn-quick').innerHTML = `${icon('plus')}<span class="label">สร้างใหม่</span>`;
   $('#quick-menu').innerHTML = [
     ['task', 'checkSquare', 'งานใหม่', '#6366f1', 'N'],
+    ['meeting', 'users', 'นัดประชุม', '#0ea5e9', 'M'],
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
     ['goal', 'target', 'เป้าหมาย', '#10b981', 'G'],
   ]
@@ -126,6 +128,7 @@ function setupQuickMenu() {
 function quickCreate(kind) {
   if (kind === 'task') openTaskForm();
   if (kind === 'event') openEventForm();
+  if (kind === 'meeting') openEventForm(null, { isMeeting: true });
   if (kind === 'goal') openGoalForm();
 }
 
@@ -153,9 +156,10 @@ function setupShortcuts() {
     const k = e.key.toLowerCase();
     if (k === 'n') { e.preventDefault(); openTaskForm(); }
     else if (k === 'e') { e.preventDefault(); openEventForm(); }
+    else if (k === 'm') { e.preventDefault(); openEventForm(null, { isMeeting: true }); }
     else if (k === 'g') { e.preventDefault(); openGoalForm(); }
     else if (k === 't') toggleTheme();
-    else if (/^[1-5]$/.test(k)) navigate(FEATURES[Number(k) - 1].id);
+    else if (/^[1-9]$/.test(k) && FEATURES[Number(k) - 1]) navigate(FEATURES[Number(k) - 1].id);
   });
 }
 

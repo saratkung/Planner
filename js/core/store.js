@@ -4,7 +4,7 @@
 import { uid, todayKey, toKey, addDays } from './utils.js';
 
 const KEY = 'planner.v1';
-const VERSION = 1;
+const VERSION = 2;
 const COLLECTIONS = ['tasks', 'events', 'goals'];
 
 const defaultSettings = () => ({ name: '', theme: 'auto', weekStart: 0 });
@@ -31,6 +31,15 @@ function normalize(data) {
     settings: { ...defaultSettings(), ...(data.settings || {}) },
   };
   s.goals.forEach((g) => (g.milestones = Array.isArray(g.milestones) ? g.milestones : []));
+  s.events.forEach((e) => {
+    // v1 -> v2: นัดที่ชื่อมีคำว่า "ประชุม" ถือเป็นการประชุม
+    if (e.isMeeting === undefined) e.isMeeting = /ประชุม|meeting/i.test(e.title || '');
+    if (!Array.isArray(e.attendees)) e.attendees = [];
+    if (!Array.isArray(e.agenda)) e.agenda = [];
+    if (!e.minutes || typeof e.minutes !== 'object') e.minutes = {};
+    e.location = e.location || '';
+    e.link = e.link || '';
+  });
   return s;
 }
 
@@ -82,10 +91,11 @@ export const store = {
     if (idx < 0) return null;
     const [item] = state[col].splice(idx, 1);
     const unlinked = [];
-    if (col === 'goals') {
+    const linkKey = col === 'goals' ? 'goalId' : col === 'events' ? 'meetingId' : null;
+    if (linkKey) {
       state.tasks.forEach((t) => {
-        if (t.goalId === id) {
-          t.goalId = null;
+        if (t[linkKey] === id) {
+          t[linkKey] = null;
           unlinked.push(t.id);
         }
       });
@@ -97,9 +107,10 @@ export const store = {
   restore(snap) {
     if (!snap) return;
     state[snap.col].splice(snap.idx, 0, snap.item);
+    const linkKey = snap.col === 'goals' ? 'goalId' : 'meetingId';
     snap.unlinked.forEach((tid) => {
       const t = this.find('tasks', tid);
-      if (t) t.goalId = snap.item.id;
+      if (t) t[linkKey] = snap.item.id;
     });
     emit({ type: 'add', col: snap.col, id: snap.item.id });
   },
@@ -114,6 +125,16 @@ export const store = {
         m.id === msId ? { ...m, done: !m.done, doneAt: !m.done ? Date.now() : null } : m,
       ),
     }));
+  },
+
+  /** บันทึกการประชุมของวันที่ระบุ (นัดแบบทำซ้ำมีบันทึกแยกแต่ละครั้ง) */
+  setMinutes(eventId, dateKey, patch, { silent = false } = {}) {
+    const ev = this.find('events', eventId);
+    if (!ev) return;
+    ev.minutes = ev.minutes || {};
+    ev.minutes[dateKey] = { notes: '', agendaDone: [], ...(ev.minutes[dateKey] || {}), ...patch };
+    if (silent) save();
+    else emit({ type: 'update', col: 'events', id: eventId });
   },
 
   setSettings(patch) {
@@ -192,7 +213,7 @@ function seed() {
 
   const task = (title, due, o = {}) => ({
     id: uid(), title, due, time: '', notes: '', priority: 'medium', category: 'work',
-    goalId: null, done: false, doneAt: null, createdAt: now, ...o,
+    goalId: null, meetingId: null, meetingDate: null, done: false, doneAt: null, createdAt: now, ...o,
   });
 
   const tasks = [
@@ -217,20 +238,48 @@ function seed() {
   ];
 
   const ev = (title, date, start, end, color, o = {}) => ({
-    id: uid(), title, date, start, end, color, category: 'work', repeat: 'none', notes: '', createdAt: now, ...o,
+    id: uid(), title, date, start, end, color, category: 'work', repeat: 'none', notes: '', createdAt: now,
+    isMeeting: false, location: '', link: '', attendees: [], agenda: [], minutes: {}, ...o,
+  });
+  const mt = (title, date, start, end, color, o = {}) => ev(title, date, start, end, color, { isMeeting: true, ...o });
+
+  const standup = mt('ประชุมทีมประจำวัน (Stand-up)', d(-14), '09:00', '09:30', '#6366f1', {
+    repeat: 'weekdays', link: 'https://meet.google.com/abc-defg-hij',
+    attendees: ['ต้น', 'ฝน', 'บอส', 'มายด์'],
+    agenda: ['เมื่อวานทำอะไรไป', 'วันนี้จะทำอะไร', 'ติดปัญหาอะไรไหม'],
+    minutes: { [d(-1)]: { notes: 'ฝนติดเรื่อง API ของลูกค้า นัดคุยแยกหลังประชุม\nบอสจะส่งดีไซน์หน้าใหม่ภายในวันพฤหัส', agendaDone: [0, 1, 2] } },
+  });
+  const client = mt('คุยงานกับลูกค้า บริษัท ABC', d(0), '14:00', '15:00', '#ec4899', {
+    location: 'ห้องประชุม 3 ชั้น 12', attendees: ['คุณสมชาย (ABC)', 'คุณนิดา (ABC)', 'บอส'],
+    agenda: ['สรุปความคืบหน้าเฟส 1', 'ขอบเขตงานเฟส 2', 'กำหนดส่งและงบประมาณ'],
+  });
+  const planning = mt('Sprint Planning', d(-3), '10:00', '11:30', '#8b5cf6', {
+    repeat: 'weekly', link: 'https://zoom.us/j/1234567890', attendees: ['ทีมพัฒนา', 'PM', 'QA'],
+    agenda: ['ทบทวน Sprint ที่แล้ว', 'เลือกงานเข้า Sprint', 'ประเมินเวลา'],
+    minutes: { [d(-3)]: { notes: 'ตกลงรับงาน 12 ชิ้น เน้นหน้าชำระเงิน\nQA ขอเวลาทดสอบเพิ่ม 1 วัน', agendaDone: [0, 1, 2] } },
+  });
+  const oneOnOne = mt('1:1 กับหัวหน้า', d(1), '16:00', '16:30', '#0ea5e9', {
+    repeat: 'weekly', location: 'ห้องหัวหน้าทีม', attendees: ['พี่เก่ง'],
+    agenda: ['อัปเดตเป้าหมายเลื่อนตำแหน่ง', 'ขอคำแนะนำเรื่องการสอนงานน้อง'],
   });
 
   const events = [
-    ev('ประชุมทีมประจำวัน', d(-14), '09:00', '09:30', '#6366f1', { repeat: 'weekdays' }),
+    standup, client, planning, oneOnOne,
     ev('Deep Work: โปรเจกต์หลัก', d(0), '10:00', '12:00', '#8b5cf6'),
-    ev('คุยงานกับลูกค้า', d(0), '14:00', '15:00', '#ec4899'),
     ev('วิ่งที่สวนสาธารณะ', d(-14), '18:00', '19:00', '#10b981', { repeat: 'weekly', category: 'health' }),
     ev('เรียนคอร์สออนไลน์', d(1), '20:00', '21:30', '#0ea5e9', { category: 'study' }),
-    ev('ทบทวนแผนประจำสัปดาห์', d(2), '16:00', '17:00', '#f59e0b'),
+    mt('ทบทวนแผนประจำสัปดาห์', d(2), '16:00', '17:00', '#f59e0b', { attendees: ['ทีม'], agenda: ['งานที่เสร็จ', 'งานค้าง', 'แผนสัปดาห์หน้า'] }),
     ev('กินข้าวกับครอบครัว', d(4), '18:30', '20:30', '#ec4899', { category: 'personal' }),
     ev('Workshop ภาวะผู้นำ', d(8), '13:00', '16:00', '#6366f1'),
     ev('วันเกิดเพื่อน 🎂', d(12), '19:00', '22:00', '#ef4444', { category: 'personal' }),
   ];
+
+  // งานที่ได้มาจากการประชุม (action items)
+  tasks.push(
+    task('ส่งสรุป API ให้ฝน', d(0), { meetingId: standup.id, meetingDate: d(-1), priority: 'high' }),
+    task('ทำเอกสารทดสอบหน้าชำระเงิน', d(2), { meetingId: planning.id, meetingDate: d(-3) }),
+    task('อัปเดตบอร์ดงาน Sprint', d(-2), { meetingId: planning.id, meetingDate: d(-3), done: true, doneAt: now - 2 * day }),
+  );
 
   return { version: VERSION, tasks, events, goals, settings: defaultSettings() };
 }

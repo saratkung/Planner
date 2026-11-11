@@ -2,7 +2,7 @@
 // sw.js — service worker: ทำให้แอปเปิดได้แม้ไม่มีอินเทอร์เน็ต
 // เปลี่ยน VERSION ทุกครั้งที่แก้ไฟล์ เพื่อให้มือถือโหลดเวอร์ชันใหม่
 // ==========================================================
-const VERSION = 'planner-v3';
+const VERSION = 'planner-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -26,10 +26,12 @@ const APP_SHELL = [
   './js/ui/widgets.js',
   './js/forms/eventForm.js',
   './js/forms/goalForm.js',
+  './js/forms/meetingRoom.js',
   './js/forms/taskForm.js',
   './js/features/calendar.js',
   './js/features/dashboard.js',
   './js/features/goals.js',
+  './js/features/meetings.js',
   './js/features/schedule.js',
   './js/features/settings.js',
   './js/features/tasks.js',

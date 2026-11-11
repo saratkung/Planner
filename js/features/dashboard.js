@@ -16,6 +16,7 @@ import { ring, bar, animateMeters, checkbox, emptyState, meterMemory } from '../
 import { openTaskForm } from '../forms/taskForm.js';
 import { openEventForm } from '../forms/eventForm.js';
 import { openGoalForm } from '../forms/goalForm.js';
+import { openMeeting, linkLabel } from '../forms/meetingRoom.js';
 import { toast } from '../ui/toast.js';
 
 function quoteOfDay() {
@@ -174,9 +175,12 @@ export default {
         openTaskForm(store.find('tasks', taskEl.dataset.task));
         return;
       }
+      if (e.target.closest('a[href]')) return;
       const evEl = e.target.closest('[data-event]');
       if (evEl) {
-        openEventForm(store.find('events', evEl.dataset.event));
+        const ev = store.find('events', evEl.dataset.event);
+        if (ev?.isMeeting) openMeeting(ev.id, todayKey());
+        else openEventForm(ev);
         return;
       }
       const act = e.target.closest('[data-act]')?.dataset.act;
@@ -232,9 +236,10 @@ function renderTimeline(events, now, track) {
         <div class="tl-time">${e.start}<small>${e.end}</small></div>
         <div class="tl-body">
           <p class="tl-title">${esc(e.title)}</p>
-          <p class="muted">${category(e.category).emoji} ${category(e.category).label}${e.repeat !== 'none' ? ` · ${icon('repeat')}` : ''}</p>
+          <p class="muted">${e.isMeeting ? `${icon('users')} ประชุม${e.location ? ' · ' + esc(e.location) : ''}` : `${category(e.category).emoji} ${category(e.category).label}`}${e.repeat !== 'none' ? ` · ${icon('repeat')}` : ''}</p>
         </div>
         ${live ? '<span class="tag accent live-tag">กำลังดำเนินอยู่</span>' : ''}
+        ${e.isMeeting && e.link && !past ? `<a class="btn btn-outline btn-sm tl-join" href="${esc(e.link)}" target="_blank" rel="noopener" title="เข้าร่วมผ่าน ${linkLabel(e.link)}">${icon('video')}<span>เข้าร่วม</span></a>` : ''}
       </li>`;
     })
     .join('');

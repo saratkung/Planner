@@ -13,6 +13,7 @@ import { icon } from '../ui/icons.js';
 import { checkbox, emptyState } from '../ui/widgets.js';
 import { openTaskForm } from '../forms/taskForm.js';
 import { openEventForm } from '../forms/eventForm.js';
+import { openMeeting } from '../forms/meetingRoom.js';
 
 export default {
   id: 'calendar',
@@ -76,7 +77,7 @@ export default {
           <button class="${cls}" data-day="${key}" aria-label="${formatDate(d, { weekday: true })}${evs.length ? `, ${evs.length} นัดหมาย` : ''}${tks.length ? `, ${tks.length} งาน` : ''}">
             <span class="cal-num">${d.getDate()}</span>
             <span class="cal-items">
-              ${evs.slice(0, 2).map((e) => `<span class="cal-ev" style="--c:${e.color}">${esc(e.title)}</span>`).join('')}
+              ${evs.slice(0, 2).map((e) => `<span class="cal-ev" style="--c:${e.color}">${e.isMeeting ? '👥 ' : ''}${esc(e.title)}</span>`).join('')}
               ${evs.length > 2 ? `<span class="cal-more">+${evs.length - 2} รายการ</span>` : ''}
             </span>
             <span class="cal-dots">
@@ -119,8 +120,8 @@ export default {
               const { cls, vars } = track.attrs(selected + e.id);
               return `<li class="agenda-ev${cls}" style="${vars}--c:${e.color}" data-event="${e.id}" tabindex="0">
                 <span class="agenda-time">${e.start}–${e.end}</span>
-                <span class="agenda-title">${esc(e.title)}</span>
-                <span class="muted agenda-sub">${category(e.category).emoji} ${category(e.category).label}${e.repeat !== 'none' ? ' · ทำซ้ำ' : ''}</span>
+                <span class="agenda-title">${e.isMeeting ? '👥 ' : ''}${esc(e.title)}</span>
+                <span class="muted agenda-sub">${e.isMeeting ? `ประชุม${e.attendees.length ? ` · ${e.attendees.length} คน` : ''}${e.location ? ' · ' + esc(e.location) : ''}` : `${category(e.category).emoji} ${category(e.category).label}`}${e.repeat !== 'none' ? ' · ทำซ้ำ' : ''}</span>
               </li>`;
             })
             .join('')}</ul>` : emptyState('🌤️', 'ไม่มีนัดหมาย', '', true)}
@@ -193,7 +194,10 @@ export default {
       const t = e.target.closest('[data-task]');
       if (t) return openTaskForm(store.find('tasks', t.dataset.task));
       const ev = e.target.closest('[data-event]');
-      if (ev) return openEventForm(store.find('events', ev.dataset.event));
+      if (ev) {
+        const item = store.find('events', ev.dataset.event);
+        return item?.isMeeting ? openMeeting(item.id, selected) : openEventForm(item);
+      }
     });
 
     // keyboard: arrows move month when grid focused

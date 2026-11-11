@@ -251,6 +251,7 @@ function taskRow(t, track) {
   const c = category(t.category);
   const p = priority(t.priority);
   const goal = t.goalId && store.find('goals', t.goalId);
+  const meeting = t.meetingId && store.find('events', t.meetingId);
   const over = isOverdue(t);
   return `
     <li class="task-row${t.done ? ' is-done' : ''}${cls}" style="${vars}--pc:${p.color}" data-task="${t.id}" tabindex="0">
@@ -261,6 +262,7 @@ function taskRow(t, track) {
           ${t.due ? `<span class="tag ${over ? 'bad' : t.due === todayKey() ? 'accent' : ''}">${icon('calendar')}${relativeDay(t.due)}${t.time ? ' · ' + t.time : ''}</span>` : ''}
           <span class="tag">${c.emoji} ${c.label}</span>
           ${goal ? `<span class="tag" style="color:${goal.color}">${icon('target')}${esc(goal.title)}</span>` : ''}
+          ${meeting ? `<span class="tag">${icon('users')}จากประชุม ${esc(meeting.title)}</span>` : ''}
           ${t.notes ? `<span class="tag" title="${esc(t.notes)}">${icon('note')}</span>` : ''}
         </div>
       </div>

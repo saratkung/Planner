@@ -12,6 +12,7 @@ import { eventsOn, layoutDay } from '../core/selectors.js';
 import { icon } from '../ui/icons.js';
 import { segmented, bindSegmented, bar, animateMeters, meterMemory, moveSegIndicator } from '../ui/widgets.js';
 import { openEventForm } from '../forms/eventForm.js';
+import { openMeeting } from '../forms/meetingRoom.js';
 import { toast } from '../ui/toast.js';
 
 const H = 56; // px per hour
@@ -112,7 +113,7 @@ export default {
                 const short = e - s < 45;
                 return `<div class="sb-ev${short ? ' short' : ''}" data-event="${ev.id}" data-date="${k}" tabindex="0"
                   style="--c:${ev.color};--i:${i};top:${(s / 60) * H}px;height:${((e - s) / 60) * H - 2}px;left:calc(${(lane / lanes) * 100}% + 2px);width:calc(${100 / lanes}% - 4px)">
-                  <p class="sb-ev-title">${esc(ev.title)}</p>
+                  <p class="sb-ev-title">${ev.isMeeting ? '👥 ' : ''}${esc(ev.title)}</p>
                   <p class="sb-ev-time">${ev.start}–${ev.end}${ev.repeat !== 'none' ? ' ↻' : ''}</p>
                   <span class="sb-resize" data-resize aria-hidden="true"></span>
                 </div>`;
@@ -234,7 +235,7 @@ export default {
       const evEl = e.target.closest('.sb-ev');
       if (evEl && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
-        openEventForm(store.find('events', evEl.dataset.event));
+        openItem(store.find('events', evEl.dataset.event), evEl.dataset.date);
       }
     });
 
@@ -283,6 +284,11 @@ export default {
       drag.el.querySelector('.sb-ev-time').textContent = labelFor(top, drag.h0);
     }
 
+    function openItem(ev, date) {
+      if (ev?.isMeeting) openMeeting(ev.id, date);
+      else openEventForm(ev);
+    }
+
     function labelFor(top, h) {
       const s = Math.round((top / H) * 60);
       return `${minToTime(s)}–${minToTime(s + Math.round((h / H) * 60))}`;
@@ -293,7 +299,7 @@ export default {
       const d = drag;
       drag = null;
       if (!d.moved) {
-        openEventForm(d.ev);
+        openItem(d.ev, d.el.dataset.date);
         return;
       }
       d.el.classList.remove('dragging');

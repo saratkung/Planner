@@ -180,7 +180,7 @@
     height: var(--tabbar-h);
     z-index: 40;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     padding: 6px;
     border-radius: 22px;
     background: var(--surface-glass);
@@ -247,8 +247,8 @@
     content: '';
     position: absolute;
     left: 50%;
+    top: 9px;
     transform: translateX(-50%);
-    margin-top: -12px;
     width: 40px;
     height: 4px;
     border-radius: 4px;

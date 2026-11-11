@@ -8,21 +8,32 @@ import { openModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { removeWithUndo } from '../core/actions.js';
+import { segmented, bindSegmented } from '../ui/widgets.js';
 
 export function openEventForm(ev = null, defaults = {}) {
   const isEdit = !!ev;
   const e0 = {
     title: '', date: todayKey(), start: '09:00', end: '10:00', color: COLORS[0],
-    category: 'work', repeat: 'none', notes: '', ...defaults, ...(ev || {}),
+    category: 'work', repeat: 'none', notes: '', isMeeting: false, location: '', link: '',
+    attendees: [], agenda: [], ...defaults, ...(ev || {}),
   };
+  let isMeeting = !!e0.isMeeting;
   if (!defaults.end && defaults.start && !ev) e0.end = minToTime(timeToMin(defaults.start) + 60);
   let color = e0.color;
 
   const body = `
     <form class="form-grid" id="event-form" novalidate>
+      ${segmented(
+        [
+          { id: 'event', label: 'กิจกรรม / นัดหมาย', icon: icon('calendar') },
+          { id: 'meeting', label: 'การประชุม', icon: icon('users') },
+        ],
+        isMeeting ? 'meeting' : 'event',
+        { name: 'kind', block: true },
+      )}
       <div class="field">
-        <label for="ef-title">ชื่อนัดหมาย / กิจกรรม</label>
-        <input class="input" id="ef-title" name="title" placeholder="เช่น ประชุมทีม" value="${esc(e0.title)}" autofocus maxlength="140" />
+        <label for="ef-title" id="ef-title-label">${isMeeting ? 'หัวข้อการประชุม' : 'ชื่อนัดหมาย / กิจกรรม'}</label>
+        <input class="input" id="ef-title" name="title" placeholder="${isMeeting ? 'เช่น ประชุมสรุปงานประจำเดือน' : 'เช่น ไปหาหมอฟัน'}" value="${esc(e0.title)}" autofocus maxlength="140" />
       </div>
       <div class="field">
         <label for="ef-date">วันที่</label>
@@ -39,6 +50,26 @@ export function openEventForm(ev = null, defaults = {}) {
         </div>
       </div>
       <p class="kbd-hint" id="ef-dur"></p>
+      <div class="meeting-fields ${isMeeting ? 'open' : ''}" id="ef-meeting"><div class="form-grid">
+        <div class="row">
+          <div class="field">
+            <label for="ef-location">สถานที่</label>
+            <input class="input" id="ef-location" name="location" placeholder="เช่น ห้องประชุม 3" value="${esc(e0.location)}" maxlength="120" />
+          </div>
+          <div class="field">
+            <label for="ef-link">ลิงก์ประชุมออนไลน์</label>
+            <input class="input" id="ef-link" name="link" type="url" inputmode="url" placeholder="Zoom / Meet / Teams" value="${esc(e0.link)}" maxlength="400" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="ef-attendees">ผู้เข้าร่วม <span class="muted">(คั่นด้วยเครื่องหมายจุลภาค)</span></label>
+          <input class="input" id="ef-attendees" name="attendees" placeholder="เช่น ต้น, ฝน, ทีมการตลาด" value="${esc(e0.attendees.join(', '))}" />
+        </div>
+        <div class="field">
+          <label for="ef-agenda">วาระการประชุม <span class="muted">(บรรทัดละ 1 หัวข้อ)</span></label>
+          <textarea class="textarea" id="ef-agenda" name="agenda" placeholder="สรุปงานที่ผ่านมา&#10;ปัญหาที่ติดอยู่&#10;แผนงานถัดไป">${esc(e0.agenda.join('\n'))}</textarea>
+        </div>
+      </div></div>
       <div class="row">
         <div class="field">
           <label for="ef-cat">หมวดหมู่</label>
@@ -72,7 +103,7 @@ export function openEventForm(ev = null, defaults = {}) {
     <button class="btn btn-primary" type="submit" form="event-form">${icon('check')}${isEdit ? 'บันทึก' : 'เพิ่มนัดหมาย'}</button>`;
 
   openModal({
-    title: isEdit ? '✏️ แก้ไขนัดหมาย' : '📅 เพิ่มนัดหมาย',
+    title: isEdit ? (isMeeting ? '✏️ แก้ไขการประชุม' : '✏️ แก้ไขนัดหมาย') : isMeeting ? '👥 นัดประชุม' : '📅 เพิ่มนัดหมาย',
     body,
     footer,
     onMount(root, close) {
@@ -80,6 +111,13 @@ export function openEventForm(ev = null, defaults = {}) {
       const startEl = $('#ef-start', root);
       const endEl = $('#ef-end', root);
       const dur = $('#ef-dur', root);
+      const titleLabel = $('#ef-title-label', root);
+      bindSegmented($('[data-seg="kind"]', root), (v) => {
+        isMeeting = v === 'meeting';
+        $('#ef-meeting', root).classList.toggle('open', isMeeting);
+        titleLabel.textContent = isMeeting ? 'หัวข้อการประชุม' : 'ชื่อนัดหมาย / กิจกรรม';
+        $('#ef-title', root).placeholder = isMeeting ? 'เช่น ประชุมสรุปงานประจำเดือน' : 'เช่น ไปหาหมอฟัน';
+      });
 
       const updateDur = () => {
         const d = timeToMin(endEl.value) - timeToMin(startEl.value);
@@ -129,13 +167,19 @@ export function openEventForm(ev = null, defaults = {}) {
           repeat: fd.get('repeat'),
           color,
           notes: String(fd.get('notes')).trim(),
+          isMeeting,
+          location: isMeeting ? String(fd.get('location') || '').trim() : e0.location,
+          link: isMeeting ? normalizeLink(fd.get('link')) : e0.link,
+          attendees: isMeeting ? splitList(fd.get('attendees'), /[,\n]/) : e0.attendees,
+          agenda: isMeeting ? splitList(fd.get('agenda'), /\n/) : e0.agenda,
         };
+        if (!isEdit) data.minutes = {};
         if (isEdit) {
           store.update('events', ev.id, data);
           toast('บันทึกนัดหมายแล้ว', { icon: '💾' });
         } else {
           store.add('events', data);
-          toast('เพิ่มนัดหมายแล้ว', { icon: '📅' });
+          toast(isMeeting ? 'นัดประชุมแล้ว' : 'เพิ่มนัดหมายแล้ว', { icon: isMeeting ? '👥' : '📅' });
         }
         close();
       });
@@ -147,4 +191,17 @@ export function openEventForm(ev = null, defaults = {}) {
       });
     },
   });
+}
+
+function splitList(v, sep) {
+  return String(v || '')
+    .split(sep)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+function normalizeLink(v) {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  return /^https?:\/\//i.test(s) ? s : 'https://' + s;
 }

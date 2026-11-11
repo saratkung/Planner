@@ -406,6 +406,7 @@
 .modal-overlay.closing { animation: fadeIn 0.22s ease reverse forwards; }
 .modal {
   width: min(560px, 100%);
+  min-width: 0;
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
   display: flex;
@@ -428,6 +429,7 @@
 .modal-body { padding: 14px 22px; overflow-y: auto; }
 .modal-foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 14px 22px 20px;

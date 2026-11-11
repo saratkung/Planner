@@ -131,3 +131,45 @@ export function layoutDay(events) {
   if (cluster.length) flush();
   return out;
 }
+
+// ---------------- meetings ----------------
+
+/** All meeting occurrences from startKey to endKey (inclusive), oldest first. */
+export function meetingsBetween(startKey, endKey) {
+  const out = [];
+  let d = fromKey(startKey);
+  const end = fromKey(endKey);
+  while (d <= end) {
+    const k = toKey(d);
+    eventsOn(k).forEach((e) => e.isMeeting && out.push(e));
+    d = addDays(d, 1);
+  }
+  return out;
+}
+
+/** 'upcoming' | 'live' | 'past' for an occurrence. */
+export function meetingStatus(m) {
+  const today = todayKey();
+  if (m.occurrence < today) return 'past';
+  if (m.occurrence > today) return 'upcoming';
+  const now = new Date().getHours() * 60 + new Date().getMinutes();
+  if (now < timeToMin(m.start)) return 'upcoming';
+  if (now < timeToMin(m.end)) return 'live';
+  return 'past';
+}
+
+/** Minutes until the meeting starts (negative if started). */
+export function minutesUntil(m) {
+  const start = fromKey(m.occurrence);
+  start.setMinutes(timeToMin(m.start));
+  return Math.round((start - Date.now()) / 60000);
+}
+
+export function minutesOf(ev, key) {
+  return ev.minutes?.[key] || { notes: '', agendaDone: [] };
+}
+
+/** Action items (tasks) created in a meeting occurrence. */
+export function actionItems(eventId, key) {
+  return store.state.tasks.filter((t) => t.meetingId === eventId && (!key || t.meetingDate === key));
+}
