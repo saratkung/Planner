@@ -285,6 +285,11 @@ function toGoogle(ev) {
   const want = APP_TO_G[ev.color];
   const current = ev.gColorId ? G_TO_APP[ev.gColorId] : DEFAULT_COLOR;
   if (want && ev.color !== current) body.colorId = want;
+  // นัดใหม่ที่สร้างในแอป: ให้ Google Calendar แจ้งเตือนด้วย (เตือนได้แม้ปิด Planner อยู่)
+  const nt = store.state.settings.notify;
+  if (!ev.gId && nt?.gcal && !ev.allDay) {
+    body.reminders = { useDefault: false, overrides: [{ method: 'popup', minutes: Number(nt.lead) || 10 }] };
+  }
   if (!ev.gId && ev.repeat && ev.repeat !== 'none') {
     const rule = {
       daily: 'RRULE:FREQ=DAILY',

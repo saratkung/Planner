@@ -14,6 +14,7 @@ import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
 import { splashStep, hideSplash } from './ui/splash.js';
 import { setupLock, isLocked } from './ui/lock.js';
+import { setupNotify } from './ui/notify.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
 import { setupDrive } from './sync/drive.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
@@ -246,6 +247,7 @@ function init() {
   setupDrive();
   setupLock();
   setupSmartPaste();
+  setupNotify();
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);

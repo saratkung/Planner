@@ -2,7 +2,7 @@
 // sw.js — service worker: ทำให้แอปเปิดได้แม้ไม่มีอินเทอร์เน็ต
 // เปลี่ยน VERSION ทุกครั้งที่แก้ไฟล์ เพื่อให้มือถือโหลดเวอร์ชันใหม่
 // ==========================================================
-const VERSION = 'planner-v16';
+const VERSION = 'planner-v17';
 const APP_SHELL = [
   './',
   './index.html',
@@ -29,6 +29,7 @@ const APP_SHELL = [
   './js/ui/modal.js',
   './js/ui/splash.js',
   './js/ui/lock.js',
+  './js/ui/notify.js',
   './js/ui/toast.js',
   './js/ui/widgets.js',
   './js/forms/eventForm.js',
@@ -66,6 +67,26 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('message', (e) => {
   if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
+// แตะการแจ้งเตือน: เปิดแอป (หรือสลับไปหน้าต่างที่เปิดอยู่) / เข้าร่วมประชุม
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const data = e.notification.data || {};
+  const target = e.action === 'join' && data.link ? data.link : new URL(data.url || './', self.registration.scope).href;
+  e.waitUntil(
+    (async () => {
+      if (e.action === 'join' && data.link) return self.clients.openWindow(target);
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const win = wins.find((w) => w.url.startsWith(self.registration.scope));
+      if (win) {
+        await win.focus();
+        if ('navigate' in win) return win.navigate(target);
+        return;
+      }
+      return self.clients.openWindow(target);
+    })(),
+  );
 });
 
 self.addEventListener('fetch', (e) => {

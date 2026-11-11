@@ -9,6 +9,7 @@ import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
 import { setupPin, disablePin, verifyPin, lockNow, setLockAfter, lockSupported } from '../ui/lock.js';
+import { enableNotify, disableNotify, setNotifyOption, testNotify, notifyPermission, notifySupported, isIOS } from '../ui/notify.js';
 import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange, pwaSupported, isEmbedded } from '../pwa.js';
 
 export function applyTheme(theme = store.state.settings.theme) {
@@ -40,6 +41,38 @@ function installSection() {
   </div>`;
 }
 
+function notifySectionHTML() {
+  const n = store.state.settings.notify;
+  const perm = notifyPermission();
+  const head = `<div class="install-head"><span class="gc-sub-ico">🔔</span><div><b>การแจ้งเตือน</b>
+    <p class="muted">เตือนก่อนประชุม นัดหมาย และงานที่มีเวลา</p></div></div>`;
+  const gcalOn = store.state.settings.gcal.enabled;
+  const tip = `<p class="muted gc-note">💡 Planner เตือนได้ขณะเปิดแอปอยู่หรือเพิ่งสลับออก ถ้าอยากให้เตือนแม้ปิดแอป ให้${gcalOn ? '' : 'เชื่อมต่อ Google Calendar แล้ว'}เปิด “ตั้งการแจ้งเตือนใน Google ด้วย” แอป Google Calendar ในมือถือจะเตือนให้</p>`;
+  if (!notifySupported() && !n.enabled)
+    return `<div class="gc-box">${head}<p class="muted gc-note">${isIOS() ? 'บน iPhone: ติดตั้งแอปลงหน้าจอโฮมก่อน (แชร์ → เพิ่มไปยังหน้าจอโฮม) แล้วเปิดจากไอคอน จึงจะเปิดการแจ้งเตือนได้' : 'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน'}</p>
+      <label class="switch-row"><input type="checkbox" data-nt="gcal" ${n.gcal ? 'checked' : ''} /><span class="switch" aria-hidden="true"></span><span>ตั้งการแจ้งเตือนใน Google Calendar ด้วย (นัดที่สร้างใน Planner)</span></label></div>`;
+  if (!n.enabled || perm !== 'granted')
+    return `<div class="gc-box">${head}
+      ${perm === 'denied' ? '<p class="gc-error">⚠️ เคยปิดการแจ้งเตือนของเว็บนี้ไว้ เปิดได้ในการตั้งค่าของเบราว์เซอร์ (ไอคอนกุญแจข้างลิงก์) แล้วกดปุ่มด้านล่างอีกครั้ง</p>' : ''}
+      <button class="btn btn-primary btn-sm" type="button" data-nt="on">🔔 เปิดการแจ้งเตือน</button>${tip}</div>`;
+  const leads = [5, 10, 15, 30, 60];
+  const sw = (key, label) => `<label class="switch-row"><input type="checkbox" data-nt="${key}" ${n[key] ? 'checked' : ''} /><span class="switch" aria-hidden="true"></span><span>${label}</span></label>`;
+  return `<div class="gc-box">${head}
+    <p class="gc-state"><span class="gc-dot ok"></span>เปิดใช้อยู่</p>
+    <div class="field">
+      <label for="nt-lead">เตือนล่วงหน้า</label>
+      <select class="select" id="nt-lead">${leads.map((m) => `<option value="${m}" ${Number(n.lead) === m ? 'selected' : ''}>${m < 60 ? m + ' นาที' : '1 ชั่วโมง'}</option>`).join('')}</select>
+    </div>
+    ${sw('events', 'ประชุมและนัดหมาย')}
+    ${sw('tasks', 'งานที่ตั้งเวลาไว้')}
+    ${sw('morning', 'ชวนวางแผนวันนี้ ตอนเริ่มงาน')}
+    ${sw('gcal', 'ตั้งการแจ้งเตือนใน Google Calendar ด้วย (นัดที่สร้างใน Planner)')}
+    <div class="chips">
+      <button class="btn btn-outline btn-sm" type="button" data-nt="test">ทดสอบการแจ้งเตือน</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-nt="off">ปิดการแจ้งเตือน</button>
+    </div>${tip}</div>`;
+}
+
 function lockSectionHTML() {
   const l = store.state.settings.lock;
   const head = `<div class="install-head"><span class="gc-sub-ico">🔒</span><div><b>ล็อกแอปด้วย PIN</b>
@@ -69,6 +102,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
     <div class="form-grid">
       <div id="st-install">${installSection()}</div>
       ${gcalSectionHTML()}
+      ${notifySectionHTML()}
       ${lockSectionHTML()}
       <div class="field">
         <label for="st-name">ชื่อของคุณ</label>
@@ -149,6 +183,31 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       if (focusInstall) inst.firstElementChild.classList.add('pop');
       offGcal = bindGcalSection(root, { closeSettings: close });
       $('#lk-after', root)?.addEventListener('change', (e) => setLockAfter(e.target.value));
+      $('#nt-lead', root)?.addEventListener('change', (e) => setNotifyOption({ lead: Number(e.target.value) }));
+      root.addEventListener('change', (e) => {
+        const k = e.target.dataset?.nt;
+        if (k && e.target.type === 'checkbox') setNotifyOption({ [k]: e.target.checked });
+      });
+      root.addEventListener('click', async (e) => {
+        const act = e.target.closest('button[data-nt]')?.dataset.nt;
+        if (!act) return;
+        if (act === 'on') {
+          try {
+            await enableNotify();
+            close();
+            toast('เปิดการแจ้งเตือนแล้ว', { icon: '🔔' });
+            setTimeout(() => openSettings(), 300);
+          } catch (err) {
+            toast(err.message, { icon: '⚠️', duration: 5000 });
+          }
+        }
+        if (act === 'test') testNotify();
+        if (act === 'off') {
+          disableNotify();
+          close();
+          toast('ปิดการแจ้งเตือนแล้ว', { icon: '🔕' });
+        }
+      });
       root.addEventListener('click', (e) => {
         const act = e.target.closest('[data-lock]')?.dataset.lock;
         if (!act) return;

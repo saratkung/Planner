@@ -18,12 +18,14 @@ const defaultGcal = () => ({
 });
 const defaultBackup = () => ({ auto: true, lastBackup: null, fileId: null });
 const defaultLock = () => ({ enabled: false, salt: '', hash: '', after: 1 }); // after = ล็อกเมื่อออกจากแอปเกินกี่นาที
+// การแจ้งเตือน: lead = เตือนก่อนกี่นาที, gcal = ใส่การแจ้งเตือนในนัดที่ส่งไป Google ด้วย
+const defaultNotify = () => ({ enabled: false, lead: 10, events: true, tasks: true, morning: true, gcal: true });
 const defaultSettings = () => ({
   name: '', theme: 'auto', weekStart: 0, workStart: '08:30', workEnd: '17:30',
-  gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(),
+  gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(), notify: defaultNotify(),
 });
 // ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
-const DEVICE_KEYS = ['gcal', 'backup', 'lock'];
+const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify'];
 
 let state = load();
 const listeners = new Set();
@@ -50,6 +52,7 @@ function normalize(data) {
   s.settings.gcal = { ...defaultGcal(), ...(s.settings.gcal || {}) };
   s.settings.backup = { ...defaultBackup(), ...(s.settings.backup || {}) };
   s.settings.lock = { ...defaultLock(), ...(s.settings.lock || {}) };
+  s.settings.notify = { ...defaultNotify(), ...(s.settings.notify || {}) };
   s.goals.forEach((g) => (g.milestones = Array.isArray(g.milestones) ? g.milestones : []));
   s.events.forEach((e) => {
     // v1 -> v2: นัดที่ชื่อมีคำว่า "ประชุม" ถือเป็นการประชุม
