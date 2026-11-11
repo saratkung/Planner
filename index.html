@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Life Planner</title>
   <meta name="description" content="วางแผนชีวิต งาน เป้าหมาย และตารางเวลา ในที่เดียว" />
-  <meta name="theme-color" content="#f4f5fb" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f2fb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#110f26" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" href="icons/favicon-64.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -33,11 +33,17 @@
 </head>
 <body>
   <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="petals" aria-hidden="true">
+    <i style="--x:8%;--d:19s;--delay:-2s"></i><i style="--x:27%;--d:23s;--delay:-11s"></i>
+    <i style="--x:46%;--d:17s;--delay:-6s"></i><i style="--x:63%;--d:25s;--delay:-15s"></i>
+    <i style="--x:78%;--d:21s;--delay:-4s"></i><i style="--x:90%;--d:18s;--delay:-9s"></i>
+    <i style="--x:55%;--d:27s;--delay:-20s"></i>
+  </div>
 
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo">🗓️</div>
+        <div class="brand-logo"><img id="brand-img" src="icons/icon-192.png" alt="" width="46" height="46" /></div>
         <div>
           <div class="brand-name">Life Planner</div>
           <div class="brand-sub">วางแผนชีวิตให้ชัดเจน</div>

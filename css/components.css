@@ -459,13 +459,14 @@
   width: 100%;
   padding: 12px 14px 12px 16px;
   border-radius: 14px;
-  background: #1c1f33;
+  background: var(--navy);
   color: #f4f5ff;
   box-shadow: var(--shadow-lg);
   font-size: 14px;
   animation: fadeUp 0.35s var(--spring) both;
 }
-:root[data-theme='dark'] .toast { background: #2a3060; }
+:root[data-theme='dark'] .toast { background: #2b2660; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .toast { background: #2b2660; } }
 .toast.out { animation: modalOut 0.25s ease forwards; }
 .toast .t-ico { font-size: 18px; }
 .toast .t-msg { flex: 1; }

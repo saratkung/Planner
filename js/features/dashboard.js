@@ -101,7 +101,7 @@ export default {
                 <p class="stat-sub">คืบหน้าเฉลี่ย ${avgGoal}%</p></div>
             </div>
             <div class="card stat card-hover">
-              <div class="stat-ico ${st ? 'flame' : ''}" style="--c:#f59e0b">${icon('fire')}</div>
+              <div class="stat-ico ${st ? 'flame' : ''}" style="--c:var(--gold)">${icon('fire')}</div>
               <div><p class="stat-label">ทำต่อเนื่อง</p>
                 <p class="stat-value"><span data-count="${st}">${st}</span><small> วัน</small></p>
                 <p class="stat-sub">${overdue.length ? `<span class="tag bad">${icon('alert')}เลยกำหนด ${overdue.length} งาน</span>` : 'ไม่มีงานค้าง 👍'}</p></div>

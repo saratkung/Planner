@@ -3,7 +3,7 @@
 // ==========================================================
 import { prefersReducedMotion } from '../core/utils.js';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9'];
+const COLORS = ['#5b4bc4', '#8270dc', '#b9a9ff', '#e3b23c', '#f2a7c3', '#2a2563'];
 let canvas, ctx, particles = [], raf = null;
 
 function setup() {

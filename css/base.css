@@ -1,34 +1,40 @@
 /* ==========================================================
    base.css — design tokens, reset, typography
    ========================================================== */
+/* Theme from the Life Planner logo: night navy-purple sky, lavender,
+   CIB-badge gold and sakura pink. Layout: sidebar + content shell. */
 :root {
-  --bg: #f4f5fb;
-  --bg-soft: #eceefa;
+  --bg: #f4f2fb;
+  --bg-soft: #ebe7f8;
   --surface: #ffffff;
-  --surface-2: #f7f8fd;
-  --surface-glass: rgba(255, 255, 255, 0.72);
-  --border: #e3e6f2;
-  --border-strong: #cfd4e8;
-  --text: #1c1f33;
-  --text-2: #4b5170;
-  --muted: #8389a6;
+  --surface-2: #f8f6fe;
+  --surface-glass: rgba(255, 255, 255, 0.74);
+  --border: #e4e0f3;
+  --border-strong: #cfc8ea;
+  --text: #1d1a3a;
+  --text-2: #4a4570;
+  --muted: #857fa8;
 
-  --accent: #6366f1;
-  --accent-2: #8b5cf6;
-  --accent-soft: #eef0ff;
-  --accent-ink: #4338ca;
-  --grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #ec4899 120%);
+  --accent: #5b4bc4;
+  --accent-2: #8270dc;
+  --accent-soft: #eeebfc;
+  --accent-ink: #3f32a0;
+  --navy: #2a2563;
+  --gold: #d9a21b;
+  --gold-soft: #fbf1d6;
+  --sakura: #f2a7c3;
+  --grad: linear-gradient(135deg, #2a2563 0%, #4a3fa6 45%, #8270dc 100%);
 
   --good: #16a34a;
   --good-soft: #e7f8ee;
-  --warn: #d97706;
+  --warn: #c98a0b;
   --warn-soft: #fff4e2;
   --bad: #e11d48;
   --bad-soft: #ffe9ee;
 
-  --shadow-sm: 0 1px 2px rgba(28, 31, 51, 0.06), 0 1px 3px rgba(28, 31, 51, 0.05);
-  --shadow: 0 6px 24px -8px rgba(40, 44, 90, 0.18), 0 2px 6px rgba(40, 44, 90, 0.05);
-  --shadow-lg: 0 24px 60px -16px rgba(40, 44, 90, 0.35);
+  --shadow-sm: 0 1px 2px rgba(29, 26, 58, 0.06), 0 1px 3px rgba(29, 26, 58, 0.05);
+  --shadow: 0 6px 24px -8px rgba(42, 37, 99, 0.2), 0 2px 6px rgba(42, 37, 99, 0.05);
+  --shadow-lg: 0 24px 60px -16px rgba(42, 37, 99, 0.38);
 
   --radius-sm: 10px;
   --radius: 16px;
@@ -48,20 +54,25 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0d1020;
-    --bg-soft: #141831;
-    --surface: #171b33;
-    --surface-2: #1d2240;
-    --surface-glass: rgba(23, 27, 51, 0.72);
-    --border: #272d50;
-    --border-strong: #363e6b;
-    --text: #eef0ff;
-    --text-2: #b7bce0;
-    --muted: #7d84ad;
-    --accent: #818cf8;
-    --accent-2: #a78bfa;
-    --accent-soft: #252a55;
-    --accent-ink: #c7cbff;
+    --bg: #110f26;
+    --bg-soft: #17143a;
+    --surface: #1a1736;
+    --surface-2: #221e45;
+    --surface-glass: rgba(26, 23, 54, 0.74);
+    --border: #2e2a58;
+    --border-strong: #3d3872;
+    --text: #efedff;
+    --text-2: #bcb6e6;
+    --muted: #8580b3;
+    --accent: #9d8df0;
+    --accent-2: #b9a9ff;
+    --accent-soft: #2b2660;
+    --accent-ink: #d4cbff;
+    --navy: #2a2563;
+    --gold: #f0c24b;
+    --gold-soft: #3a2f14;
+    --sakura: #f2a7c3;
+    --grad: linear-gradient(135deg, #2a2563 0%, #4a3fa6 45%, #8270dc 100%);
     --good: #4ade80;
     --good-soft: #15322a;
     --warn: #fbbf24;
@@ -75,20 +86,25 @@
   }
 }
 :root[data-theme='dark'] {
-  --bg: #0d1020;
-  --bg-soft: #141831;
-  --surface: #171b33;
-  --surface-2: #1d2240;
-  --surface-glass: rgba(23, 27, 51, 0.72);
-  --border: #272d50;
-  --border-strong: #363e6b;
-  --text: #eef0ff;
-  --text-2: #b7bce0;
-  --muted: #7d84ad;
-  --accent: #818cf8;
-  --accent-2: #a78bfa;
-  --accent-soft: #252a55;
-  --accent-ink: #c7cbff;
+  --bg: #110f26;
+  --bg-soft: #17143a;
+  --surface: #1a1736;
+  --surface-2: #221e45;
+  --surface-glass: rgba(26, 23, 54, 0.74);
+  --border: #2e2a58;
+  --border-strong: #3d3872;
+  --text: #efedff;
+  --text-2: #bcb6e6;
+  --muted: #8580b3;
+  --accent: #9d8df0;
+  --accent-2: #b9a9ff;
+  --accent-soft: #2b2660;
+  --accent-ink: #d4cbff;
+  --navy: #2a2563;
+  --gold: #f0c24b;
+  --gold-soft: #3a2f14;
+  --sakura: #f2a7c3;
+  --grad: linear-gradient(135deg, #2a2563 0%, #4a3fa6 45%, #8270dc 100%);
   --good: #4ade80;
   --good-soft: #15322a;
   --warn: #fbbf24;
