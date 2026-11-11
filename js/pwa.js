@@ -69,6 +69,7 @@ export function setupPWA({ onSuggestInstall } = {}) {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', async () => {
       try {
+        const hadController = !!navigator.serviceWorker.controller;
         const reg = await navigator.serviceWorker.register('./sw.js');
         swOk = true;
         notify();
@@ -89,7 +90,8 @@ export function setupPWA({ onSuggestInstall } = {}) {
         });
         let reloaded = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (reloaded) return;
+          // เปิดครั้งแรก (ยังไม่เคยมี service worker) ไม่ต้องรีโหลด: รีโหลดเฉพาะตอนอัปเดตเวอร์ชัน
+          if (!hadController || reloaded) return;
           reloaded = true;
           location.reload();
         });
