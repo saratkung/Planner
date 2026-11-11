@@ -119,6 +119,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
             <input type="file" accept="application/json,.json" data-import hidden /></label>
         </div>
         <div class="chips" style="margin-top:4px">
+          <button class="btn btn-outline btn-sm" data-clear-events>${icon('calendar')}ลบนัดหมายทั้งหมด</button>
           <button class="btn btn-ghost btn-sm" data-demo>${icon('sparkles')}โหลดข้อมูลตัวอย่าง</button>
           <button class="btn btn-danger btn-sm" data-clear>${icon('trash')}ล้างข้อมูลทั้งหมด</button>
         </div>
@@ -205,6 +206,49 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
           store.reset({ demo: true });
           toast('โหลดข้อมูลตัวอย่างแล้ว', { icon: '✨' });
         }
+      });
+
+      $('[data-clear-events]', root).addEventListener('click', async () => {
+        close();
+        const synced = store.state.settings.gcal.enabled;
+        // นัดที่ซิงก์กับ Google ไม่ลบ: ถ้าลบในแอป จะไปลบใน Google Calendar ด้วย
+        const removable = store.state.events.filter((e) => !(synced && e.source === 'google'));
+        const kept = store.state.events.length - removable.length;
+        if (!removable.length) {
+          toast(kept ? 'นัดที่เหลือเป็นนัดจาก Google Calendar จัดการได้ในแอป Google Calendar' : 'ไม่มีนัดหมายให้ลบ', { icon: 'ℹ️' });
+          return;
+        }
+        const ok = await confirmDialog({
+          title: `ลบนัดหมาย ${removable.length} รายการ?`,
+          message:
+            'ลบนัดหมายและการประชุมทั้งหมด รวมถึงบันทึกการประชุม (งานและเป้าหมายยังอยู่ครบ)' +
+            (kept ? ` · นัดจาก Google Calendar ${kept} รายการจะไม่ถูกลบ` : ''),
+          okLabel: 'ลบนัดหมาย',
+          danger: true,
+        });
+        if (!ok) return;
+        const ids = new Set(removable.map((e) => e.id));
+        const unlinked = store.state.tasks.filter((t) => ids.has(t.meetingId)).map((t) => [t.id, t.meetingId]);
+        const removed = removable.map((e) => store.state.events.indexOf(e)).map((i, n) => [i, removable[n]]);
+        store.batch((st) => {
+          st.events = st.events.filter((e) => !ids.has(e.id));
+          st.tasks.forEach((t) => {
+            if (ids.has(t.meetingId)) t.meetingId = null;
+          });
+        });
+        toast(`ลบนัดหมาย ${removable.length} รายการแล้ว`, {
+          icon: '🗓️',
+          action: 'เลิกทำ',
+          duration: 6000,
+          onAction: () =>
+            store.batch((st) => {
+              removed.forEach(([i, ev]) => st.events.splice(Math.min(i, st.events.length), 0, ev));
+              unlinked.forEach(([tid, mid]) => {
+                const t = st.tasks.find((x) => x.id === tid);
+                if (t) t.meetingId = mid;
+              });
+            }),
+        });
       });
 
       $('[data-clear]', root).addEventListener('click', async () => {
