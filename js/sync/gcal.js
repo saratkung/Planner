@@ -11,6 +11,7 @@
 // ==========================================================
 import { store } from '../core/store.js';
 import { uid, toKey, addDays, fromKey, pad } from '../core/utils.js';
+import { GOOGLE_CLIENT_ID } from '../config.js';
 
 export const CAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 // drive.file: เห็นเฉพาะไฟล์ที่แอปนี้สร้างเอง ไม่เห็นไฟล์อื่นใน Drive
@@ -58,6 +59,9 @@ export const onGcalChange = (fn) => {
 };
 
 const cfg = () => store.state.settings.gcal;
+/** Client ID ที่ใช้: ของผู้ใช้ (ถ้าตั้งเอง) หรือค่าตั้งต้นของแอป */
+export const activeClientId = () => cfg().clientId?.trim() || GOOGLE_CLIENT_ID;
+export const usingDefaultClientId = () => !cfg().clientId?.trim() && !!GOOGLE_CLIENT_ID;
 const setCfg = (patch) => store.setSettings({ gcal: { ...cfg(), ...patch } });
 const hasToken = () => !!token && Date.now() < tokenExp - 60000;
 export const hasGoogleToken = hasToken;
@@ -146,7 +150,7 @@ function loadGis() {
 
 /** ขอ token: ต้องเรียกจากการกดปุ่ม (เบราว์เซอร์จะบล็อก popup ถ้าไม่ได้กด) */
 async function requestToken({ consent = false } = {}) {
-  const clientId = cfg().clientId?.trim();
+  const clientId = activeClientId();
   if (!clientId) throw new Error('ยังไม่ได้ใส่ Client ID');
   await loadGis();
   return new Promise((resolve, reject) => {
@@ -591,7 +595,7 @@ function stopAuto() {
 
 /** โหลดสคริปต์ล็อกอินไว้ก่อน เพื่อให้ popup เปิดได้ทันทีเมื่อกดปุ่ม */
 export function preloadGcal() {
-  if (gcalAvailable() && cfg().clientId) loadGis().catch(() => {});
+  if (gcalAvailable() && activeClientId()) loadGis().catch(() => {});
 }
 
 export function setupGcal() {

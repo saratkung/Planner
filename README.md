@@ -53,7 +53,9 @@ confetti ชุดใหญ่เมื่อเป้าหมายครบ 1
 - แอปไม่แก้รายชื่อผู้เข้าร่วม และไม่ส่งอีเมลแจ้งใคร
 - การเข้าสู่ระบบมีอายุประมาณ 1 ชั่วโมง เมื่อหมดอายุ ปุ่มซิงก์ด้านบนจะมีจุดสีส้ม แตะเพื่อเข้าสู่ระบบและซิงก์อีกครั้ง
 
-**ตั้งค่าครั้งแรก:** ต้องสร้าง OAuth Client ID ของตัวเองใน Google Cloud Console (ฟรี) ดูขั้นตอนได้ในแอป: **ตั้งค่า → Google Calendar → วิธีขอ Client ID**
+**แอปนี้ใส่ Client ID ไว้แล้ว** (`js/config.js`) แค่กดเชื่อมต่อ แต่บัญชี Gmail ที่ใช้ต้องอยู่ในรายชื่อ *Test users* ของโปรเจกต์ใน Google Cloud
+
+**ถ้าจะใช้ Client ID ของตัวเอง:** ต้องสร้าง OAuth Client ID ของตัวเองใน Google Cloud Console (ฟรี) ดูขั้นตอนได้ในแอป: **ตั้งค่า → Google Calendar → วิธีขอ Client ID**
 ช่อง *Authorized JavaScript origins* ให้ใส่ `https://saratkung.github.io` (และ `http://localhost:8080` ถ้าจะทดสอบในเครื่อง)
 ใช้ได้เฉพาะเมื่อเปิดจากเว็บจริงหรือ localhost (หน้าตัวอย่างใน Claude เชื่อมต่อ Google ไม่ได้)
 

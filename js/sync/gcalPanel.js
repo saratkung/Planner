@@ -7,7 +7,7 @@ import { icon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
 import { confirmDialog } from '../ui/modal.js';
 import {
-  gcalStatus, onGcalChange, gcalAvailable, connect, disconnect, syncNow, setAutoCreate, preloadGcal,
+  gcalStatus, onGcalChange, gcalAvailable, activeClientId, usingDefaultClientId, connect, disconnect, syncNow, setAutoCreate, preloadGcal,
 } from './gcal.js';
 import { backupNow, restoreLatest, setAutoBackup, backupStatus, onBackupChange } from './drive.js';
 
@@ -54,15 +54,17 @@ function inner() {
     return `${head}<p class="muted gc-note">หน้านี้เป็นเวอร์ชันทดลองใช้ จึงเชื่อมต่อ Google ไม่ได้ เมื่อเปิดจากเว็บจริง (GitHub Pages) จะเชื่อมต่อได้ที่ตรงนี้</p>`;
 
   if (!st.connected) {
-    return `${head}
-      <div class="field">
+    const ready = usingDefaultClientId();
+    const field = `<div class="field">
         <label for="gc-client">Client ID</label>
-        <input class="input" id="gc-client" value="${esc(c.clientId)}" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
-      </div>
+        <input class="input" id="gc-client" value="${esc(c.clientId)}" placeholder="${ready ? 'ใช้ค่าที่ตั้งไว้ในแอป' : 'xxxxxxxx.apps.googleusercontent.com'}" autocomplete="off" spellcheck="false" />
+      </div>`;
+    return `${head}
+      ${ready ? '<p class="muted gc-note">กดปุ่มด้านล่าง แล้วเลือกบัญชี Gmail ของคุณ ตอนที่ Google เตือนว่า "แอปยังไม่ได้รับการยืนยัน" ให้กด Continue</p>' : field}
       ${st.error ? `<p class="gc-error">${icon('alert')}${esc(st.error)}</p>` : ''}
       <button class="btn btn-primary btn-sm" type="button" data-gc="connect" ${st.state === 'connecting' ? 'disabled' : ''}>
         ${icon('link')}${st.state === 'connecting' ? 'กำลังเชื่อมต่อ…' : 'เชื่อมต่อ Google Calendar'}</button>
-      ${steps()}`;
+      ${ready ? `<details class="gc-help"><summary>ใช้ Client ID ของตัวเอง (ขั้นสูง)</summary>${field}</details>` : steps()}`;
   }
 
   const count = store.state.events.filter((e) => e.source === 'google').length;
@@ -150,8 +152,9 @@ export function bindGcalSection(root, { closeSettings } = {}) {
     const act = e.target.closest('[data-gc]')?.dataset.gc;
     if (!act) return;
     if (act === 'connect') {
-      const id = $('#gc-client', box).value.trim();
-      if (!/\.apps\.googleusercontent\.com$/.test(id)) {
+      const typed = $('#gc-client', box)?.value.trim() || '';
+      const id = typed || (usingDefaultClientId() ? '' : activeClientId());
+      if (!usingDefaultClientId() && !/\.apps\.googleusercontent\.com$/.test(id) || (typed && !/\.apps\.googleusercontent\.com$/.test(typed))) {
         const input = $('#gc-client', box);
         input.classList.add('invalid', 'shake');
         setTimeout(() => input.classList.remove('shake'), 400);
