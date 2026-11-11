@@ -50,7 +50,7 @@ export default {
       const pctToday = todays.length ? Math.round((doneToday / todays.length) * 100) : 0;
       const events = eventsOn(today);
       const now = nowMinutes();
-      const nextEv = events.find((e) => timeToMin(e.end) > now);
+      const nextEv = events.find((e) => !e.allDay && timeToMin(e.end) > now);
       const goals = s.goals.map((g) => ({ g, p: goalProgress(g) }));
       const avgGoal = goals.length ? Math.round(goals.reduce((a, x) => a + x.p.pct, 0) / goals.length) : 0;
       const st = streak();
@@ -224,16 +224,16 @@ function renderTimeline(events, now, track) {
     .map((e) => {
       const s = timeToMin(e.start);
       const en = timeToMin(e.end);
-      const past = en <= now;
-      const live = s <= now && now < en;
+      const past = !e.allDay && en <= now;
+      const live = !e.allDay && s <= now && now < en;
       let marker = '';
-      if (!nowPlaced && s > now) {
+      if (!nowPlaced && !e.allDay && s > now) {
         nowPlaced = true;
         marker = `<li class="tl-now"><span></span>ตอนนี้</li>`;
       }
       const { cls, vars } = track.attrs('e' + e.id);
       return `${marker}<li class="tl-item${past ? ' past' : ''}${live ? ' live' : ''}${cls}" data-event="${e.id}" style="${vars}--c:${e.color}">
-        <div class="tl-time">${e.start}<small>${e.end}</small></div>
+        <div class="tl-time">${e.allDay ? 'ทั้งวัน' : `${e.start}<small>${e.end}</small>`}</div>
         <div class="tl-body">
           <p class="tl-title">${esc(e.title)}</p>
           <p class="muted">${e.isMeeting ? `${icon('users')} ประชุม${e.location ? ' · ' + esc(e.location) : ''}` : `${category(e.category).emoji} ${category(e.category).label}`}${e.repeat !== 'none' ? ` · ${icon('repeat')}` : ''}</p>

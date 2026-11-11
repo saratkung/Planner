@@ -7,7 +7,16 @@ const KEY = 'planner.v1';
 const VERSION = 2;
 const COLLECTIONS = ['tasks', 'events', 'goals'];
 
-const defaultSettings = () => ({ name: '', theme: 'auto', weekStart: 0 });
+const defaultGcal = () => ({
+  enabled: false, // เชื่อมต่อ Google Calendar อยู่หรือไม่
+  clientId: '', // OAuth Client ID (ไม่ใช่ความลับ)
+  calendarId: 'primary',
+  autoCreate: true, // นัดที่สร้างในแอปหลังเชื่อมต่อ จะถูกบันทึกลง Google ด้วย
+  connectedAt: null,
+  lastSync: null,
+  pendingDeletes: [], // id ของนัดใน Google ที่รอลบ (กรณีออฟไลน์)
+});
+const defaultSettings = () => ({ name: '', theme: 'auto', weekStart: 0, gcal: defaultGcal() });
 
 let state = load();
 const listeners = new Set();
@@ -30,6 +39,7 @@ function normalize(data) {
     goals: Array.isArray(data.goals) ? data.goals : [],
     settings: { ...defaultSettings(), ...(data.settings || {}) },
   };
+  s.settings.gcal = { ...defaultGcal(), ...(s.settings.gcal || {}) };
   s.goals.forEach((g) => (g.milestones = Array.isArray(g.milestones) ? g.milestones : []));
   s.events.forEach((e) => {
     // v1 -> v2: นัดที่ชื่อมีคำว่า "ประชุม" ถือเป็นการประชุม
@@ -100,7 +110,7 @@ export const store = {
         }
       });
     }
-    emit({ type: 'remove', col, id });
+    emit({ type: 'remove', col, id, item });
     return { col, idx, item, unlinked };
   },
 
@@ -135,6 +145,12 @@ export const store = {
     ev.minutes[dateKey] = { notes: '', agendaDone: [], ...(ev.minutes[dateKey] || {}), ...patch };
     if (silent) save();
     else emit({ type: 'update', col: 'events', id: eventId });
+  },
+
+  /** เปลี่ยนข้อมูลหลายอย่างพร้อมกัน แล้วแจ้งครั้งเดียว (ใช้ตอนซิงก์) */
+  batch(fn, meta = {}) {
+    fn(state);
+    emit({ type: 'sync', ...meta });
   },
 
   setSettings(patch) {

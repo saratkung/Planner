@@ -7,6 +7,7 @@ import { openModal, confirmDialog } from '../ui/modal.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
+import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
 import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange, pwaSupported, isEmbedded } from '../pwa.js';
 
 export function applyTheme(theme = store.state.settings.theme) {
@@ -38,12 +39,14 @@ function installSection() {
   </div>`;
 }
 
-export function openSettings({ focusInstall = false } = {}) {
+export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
   let offInstall = null;
+  let offGcal = null;
   const s = store.state.settings;
   const body = `
     <div class="form-grid">
       <div id="st-install">${installSection()}</div>
+      ${gcalSectionHTML()}
       <div class="field">
         <label for="st-name">ชื่อของคุณ</label>
         <input class="input" id="st-name" value="${esc(s.name)}" placeholder="ใช้แสดงคำทักทายในหน้าภาพรวม" maxlength="40" />
@@ -93,7 +96,10 @@ export function openSettings({ focusInstall = false } = {}) {
     title: '⚙️ ตั้งค่า',
     body,
     footer: `<span class="spacer"></span><button class="btn btn-primary" data-close>${icon('check')}เสร็จสิ้น</button>`,
-    onClose: () => offInstall?.(),
+    onClose: () => {
+      offInstall?.();
+      offGcal?.();
+    },
     onMount(root, close) {
       const inst = $('#st-install', root);
       const bindInstall = () =>
@@ -106,6 +112,12 @@ export function openSettings({ focusInstall = false } = {}) {
         bindInstall();
       });
       if (focusInstall) inst.firstElementChild.classList.add('pop');
+      offGcal = bindGcalSection(root, { closeSettings: close });
+      if (focusGcal) {
+        const box = $('#gc-box', root);
+        box.classList.add('pop');
+        requestAnimationFrame(() => box.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+      }
       $('#st-name', root).addEventListener('change', (e) => store.setSettings({ name: e.target.value.trim() }));
       bindSegmented($('[data-seg="theme"]', root), (v) => {
         store.setSettings({ theme: v });

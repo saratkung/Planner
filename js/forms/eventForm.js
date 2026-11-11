@@ -9,6 +9,7 @@ import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { removeWithUndo } from '../core/actions.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
+import { gcalStatus } from '../sync/gcal.js';
 
 export function openEventForm(ev = null, defaults = {}) {
   const isEdit = !!ev;
@@ -18,11 +19,19 @@ export function openEventForm(ev = null, defaults = {}) {
     attendees: [], agenda: [], ...defaults, ...(ev || {}),
   };
   let isMeeting = !!e0.isMeeting;
+  const fromGoogle = e0.source === 'google';
+  const gc = gcalStatus();
+  const gcalNote = fromGoogle
+    ? `<p class="gc-badge">${icon('repeat')}ซิงก์กับ Google Calendar · การแก้ไขจะอัปเดตใน Google ด้วย (ไม่แก้ผู้เข้าร่วม)</p>`
+    : !isEdit && gc.connected && store.state.settings.gcal.autoCreate
+    ? `<p class="gc-badge">${icon('repeat')}จะบันทึกลง Google Calendar ด้วย</p>`
+    : '';
   if (!defaults.end && defaults.start && !ev) e0.end = minToTime(timeToMin(defaults.start) + 60);
   let color = e0.color;
 
   const body = `
     <form class="form-grid" id="event-form" novalidate>
+      ${gcalNote}
       ${segmented(
         [
           { id: 'event', label: 'กิจกรรม / นัดหมาย', icon: icon('calendar') },
@@ -39,7 +48,11 @@ export function openEventForm(ev = null, defaults = {}) {
         <label for="ef-date">วันที่</label>
         <input class="input" type="date" id="ef-date" name="date" value="${e0.date}" required />
       </div>
-      <div class="row">
+      <label class="switch-row">
+        <input type="checkbox" id="ef-allday" ${e0.allDay ? 'checked' : ''} />
+        <span class="switch" aria-hidden="true"></span><span>ทั้งวัน</span>
+      </label>
+      <div class="row ef-times" ${e0.allDay ? 'hidden' : ''}>
         <div class="field">
           <label for="ef-start">เริ่ม</label>
           <input class="input" type="time" id="ef-start" name="start" value="${e0.start}" required />
@@ -79,9 +92,11 @@ export function openEventForm(ev = null, defaults = {}) {
         </div>
         <div class="field">
           <label for="ef-repeat">ทำซ้ำ</label>
-          <select class="select" id="ef-repeat" name="repeat">
+          ${fromGoogle
+            ? `<select class="select" id="ef-repeat" name="repeat" disabled><option value="none">${e0.recurring ? 'ตามที่ตั้งใน Google (แก้เฉพาะครั้งนี้)' : 'ไม่ทำซ้ำ'}</option></select>`
+            : `<select class="select" id="ef-repeat" name="repeat">
             ${REPEATS.map((r) => `<option value="${r.id}" ${r.id === e0.repeat ? 'selected' : ''}>${r.label}</option>`).join('')}
-          </select>
+          </select>`}
         </div>
       </div>
       <div class="field">
@@ -112,6 +127,11 @@ export function openEventForm(ev = null, defaults = {}) {
       const endEl = $('#ef-end', root);
       const dur = $('#ef-dur', root);
       const titleLabel = $('#ef-title-label', root);
+      $('#ef-allday', root).addEventListener('change', (e) => {
+        $('.ef-times', root).hidden = e.target.checked;
+        dur.hidden = e.target.checked;
+      });
+      if (e0.allDay) dur.hidden = true;
       bindSegmented($('[data-seg="kind"]', root), (v) => {
         isMeeting = v === 'meeting';
         $('#ef-meeting', root).classList.toggle('open', isMeeting);
@@ -153,7 +173,8 @@ export function openEventForm(ev = null, defaults = {}) {
           titleEl.focus();
           return;
         }
-        if (timeToMin(fd.get('end')) <= timeToMin(fd.get('start'))) {
+        const allDay = $('#ef-allday', root).checked;
+        if (!allDay && timeToMin(fd.get('end')) <= timeToMin(fd.get('start'))) {
           endEl.classList.add('invalid', 'shake');
           setTimeout(() => endEl.classList.remove('shake'), 400);
           return;
@@ -161,10 +182,11 @@ export function openEventForm(ev = null, defaults = {}) {
         const data = {
           title,
           date: fd.get('date') || todayKey(),
-          start: fd.get('start'),
-          end: fd.get('end'),
+          start: allDay ? '00:00' : fd.get('start'),
+          end: allDay ? '23:59' : fd.get('end'),
+          allDay,
           category: fd.get('category'),
-          repeat: fd.get('repeat'),
+          repeat: fromGoogle ? 'none' : fd.get('repeat') || 'none',
           color,
           notes: String(fd.get('notes')).trim(),
           isMeeting,

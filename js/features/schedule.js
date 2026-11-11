@@ -94,9 +94,13 @@ export default {
         (mode === 'week' ? ds : weekDays)
           .map((k) => {
             const d = fromKey(k);
-            const n = eventsOn(k).length;
-            return `<button class="sb-dayhead${k === today ? ' today' : ''}${mode === 'day' && k === focus ? ' active' : ''}" data-day="${k}">
+            const evs = eventsOn(k);
+            const n = evs.length;
+            const allDay = evs.filter((e) => e.allDay);
+            return `<button class="sb-dayhead${k === today ? ' today' : ''}${mode === 'day' && k === focus ? ' active' : ''}" data-day="${k}"
+              ${allDay.length ? `title="ทั้งวัน: ${esc(allDay.map((e) => e.title).join(', '))}"` : ''}>
               <span>${THAI_DAYS_SHORT[d.getDay()]}</span><b>${d.getDate()}</b>${n ? `<i>${n}</i>` : ''}
+              ${allDay.length ? `<em class="sb-ad" style="--c:${allDay[0].color}">${allDay.length > 1 ? `ทั้งวัน ${allDay.length}` : esc(allDay[0].title)}</em>` : ''}
             </button>`;
           })
           .join('');
@@ -106,7 +110,7 @@ export default {
       colsEl.style.gridTemplateColumns = `repeat(${ds.length}, minmax(0, 1fr))`;
       colsEl.innerHTML = ds
         .map((k) => {
-          const laid = layoutDay(eventsOn(k));
+          const laid = layoutDay(eventsOn(k).filter((e) => !e.allDay));
           return `<div class="sb-col${k === today ? ' today' : ''}" data-col="${k}">
             ${laid
               .map(({ ev, s, e, lane, lanes }, i) => {
@@ -145,7 +149,7 @@ export default {
       let sum = 0;
       weekDays.forEach((k) =>
         eventsOn(k).forEach((e) => {
-          const m = Math.max(0, timeToMin(e.end) - timeToMin(e.start));
+          const m = e.allDay ? 0 : Math.max(0, timeToMin(e.end) - timeToMin(e.start));
           totals[e.category] = (totals[e.category] || 0) + m;
           sum += m;
         }),

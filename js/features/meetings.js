@@ -109,7 +109,7 @@ export default {
       const today = todayKey();
       const week = meetingsBetween(today, toKey(addDays(new Date(), 6)));
       const todays = week.filter((m) => m.occurrence === today);
-      const mins = week.reduce((a, m) => a + Math.max(0, timeToMin(m.end) - timeToMin(m.start)), 0);
+      const mins = week.reduce((a, m) => a + (m.allDay ? 0 : Math.max(0, timeToMin(m.end) - timeToMin(m.start))), 0);
       const open = store.state.tasks.filter((t) => t.meetingId && !t.done).length;
       $('#meet-stats', root).innerHTML = `
         <div class="card mini-stat"><span class="ms-emoji">📅</span><div><b data-count="${todays.length}">${todays.length}</b><p class="muted">ประชุมวันนี้</p></div></div>
@@ -219,7 +219,7 @@ function meetRow(m, track) {
   const hasNotes = !!min.notes?.trim();
   return `
     <li class="meet-row ${st}${cls}" style="${vars}--c:${m.color}" data-open="${m.id}" data-date="${m.occurrence}" tabindex="0">
-      <div class="mt-time"><b>${m.start}</b><span>${m.end}</span></div>
+      <div class="mt-time">${m.allDay ? '<b>ทั้งวัน</b>' : `<b>${m.start}</b><span>${m.end}</span>`}</div>
       <div class="mt-main">
         <p class="mt-title">${esc(m.title)}${m.repeat !== 'none' ? ` <span class="muted mt-rep" title="ประชุมประจำ">${icon('repeat')}</span>` : ''}</p>
         <div class="task-meta">

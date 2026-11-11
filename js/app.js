@@ -11,6 +11,9 @@ import { openEventForm } from './forms/eventForm.js';
 import { openGoalForm } from './forms/goalForm.js';
 import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
+import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
+import { syncSummary, timeAgo } from './sync/gcalPanel.js';
+import { toast } from './ui/toast.js';
 
 import dashboard from './features/dashboard.js';
 import tasks from './features/tasks.js';
@@ -163,6 +166,36 @@ function setupShortcuts() {
   });
 }
 
+// ---------- Google Calendar sync button ----------
+function setupSyncButton() {
+  const btn = $('#btn-sync');
+  const render = () => {
+    const st = gcalStatus();
+    btn.hidden = !st.connected;
+    if (!st.connected) return;
+    btn.innerHTML = icon('repeat');
+    btn.classList.toggle('spinning', st.state === 'syncing' || st.state === 'connecting');
+    btn.classList.toggle('attention', st.state === 'needs-auth' || st.state === 'error');
+    btn.title =
+      st.state === 'needs-auth'
+        ? 'แตะเพื่อเข้าสู่ระบบ Google และซิงก์'
+        : st.state === 'error'
+        ? `ซิงก์ไม่สำเร็จ: ${st.error}`
+        : `Google Calendar · ซิงก์ล่าสุด ${timeAgo(store.state.settings.gcal.lastSync)}`;
+  };
+  btn.addEventListener('click', async () => {
+    try {
+      const r = await syncNow({ interactive: true });
+      if (r) toast(syncSummary(r), { icon: '🔄' });
+    } catch (e) {
+      toast(e.message, { icon: '⚠️', action: 'ตั้งค่า', onAction: () => openSettings({ focusGcal: true }) });
+    }
+  });
+  onGcalChange(render);
+  store.subscribe((c) => c.type === 'settings' || c.type === 'sync' ? render() : null);
+  render();
+}
+
 // ---------- boot ----------
 function init() {
   applyTheme();
@@ -175,6 +208,8 @@ function init() {
   $('#btn-settings').addEventListener('click', () => openSettings());
   $('#btn-settings-m').addEventListener('click', () => openSettings());
   setupPWA({ onSuggestInstall: () => openSettings({ focusInstall: true }) });
+  setupGcal();
+  setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);
 

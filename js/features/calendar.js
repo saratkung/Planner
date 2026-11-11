@@ -119,7 +119,7 @@ export default {
             .map((e) => {
               const { cls, vars } = track.attrs(selected + e.id);
               return `<li class="agenda-ev${cls}" style="${vars}--c:${e.color}" data-event="${e.id}" tabindex="0">
-                <span class="agenda-time">${e.start}–${e.end}</span>
+                <span class="agenda-time">${e.allDay ? 'ทั้งวัน' : `${e.start}–${e.end}`}</span>
                 <span class="agenda-title">${e.isMeeting ? '👥 ' : ''}${esc(e.title)}</span>
                 <span class="muted agenda-sub">${e.isMeeting ? `ประชุม${e.attendees.length ? ` · ${e.attendees.length} คน` : ''}${e.location ? ' · ' + esc(e.location) : ''}` : `${category(e.category).emoji} ${category(e.category).label}`}${e.repeat !== 'none' ? ' · ทำซ้ำ' : ''}</span>
               </li>`;
