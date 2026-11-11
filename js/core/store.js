@@ -16,7 +16,14 @@ const defaultGcal = () => ({
   lastSync: null,
   pendingDeletes: [], // id ของนัดใน Google ที่รอลบ (กรณีออฟไลน์)
 });
-const defaultSettings = () => ({ name: '', theme: 'auto', weekStart: 0, gcal: defaultGcal() });
+const defaultBackup = () => ({ auto: true, lastBackup: null, fileId: null });
+const defaultLock = () => ({ enabled: false, salt: '', hash: '', after: 1 }); // after = ล็อกเมื่อออกจากแอปเกินกี่นาที
+const defaultSettings = () => ({
+  name: '', theme: 'auto', weekStart: 0, workStart: '08:30', workEnd: '17:30',
+  gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(),
+});
+// ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
+const DEVICE_KEYS = ['gcal', 'backup', 'lock'];
 
 let state = load();
 const listeners = new Set();
@@ -37,9 +44,12 @@ function normalize(data) {
     tasks: Array.isArray(data.tasks) ? data.tasks : [],
     events: Array.isArray(data.events) ? data.events : [],
     goals: Array.isArray(data.goals) ? data.goals : [],
+    days: data.days && typeof data.days === 'object' ? data.days : {},
     settings: { ...defaultSettings(), ...(data.settings || {}) },
   };
   s.settings.gcal = { ...defaultGcal(), ...(s.settings.gcal || {}) };
+  s.settings.backup = { ...defaultBackup(), ...(s.settings.backup || {}) };
+  s.settings.lock = { ...defaultLock(), ...(s.settings.lock || {}) };
   s.goals.forEach((g) => (g.milestones = Array.isArray(g.milestones) ? g.milestones : []));
   s.events.forEach((e) => {
     // v1 -> v2: นัดที่ชื่อมีคำว่า "ประชุม" ถือเป็นการประชุม
@@ -159,13 +169,26 @@ export const store = {
   },
 
   exportJSON() {
-    return JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2);
+    const settings = { ...state.settings };
+    delete settings.lock; // ไม่ส่ง PIN ออกไปกับไฟล์สำรอง
+    return JSON.stringify({ ...state, settings, exportedAt: new Date().toISOString() }, null, 2);
+  },
+
+  /** ข้อมูลวางแผนรายวัน: { focus: [taskId], planned, reviewed, mood, note } */
+  day(key) {
+    return state.days[key] || { focus: [] };
+  },
+  setDay(key, patch) {
+    state.days[key] = { focus: [], ...(state.days[key] || {}), ...patch };
+    emit({ type: 'day', key });
   },
 
   importJSON(text) {
     const data = JSON.parse(text);
     if (!COLLECTIONS.some((c) => Array.isArray(data[c]))) throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+    const keep = Object.fromEntries(DEVICE_KEYS.map((k) => [k, state.settings[k]]));
     state = normalize(data);
+    Object.assign(state.settings, keep);
     emit({ type: 'reset' });
   },
 
@@ -297,7 +320,7 @@ function seed() {
     task('อัปเดตบอร์ดงาน Sprint', d(-2), { meetingId: planning.id, meetingDate: d(-3), done: true, doneAt: now - 2 * day }),
   );
 
-  return { version: VERSION, tasks, events, goals, settings: defaultSettings() };
+  return { version: VERSION, tasks, events, goals, days: {}, settings: defaultSettings() };
 }
 
 export { todayKey };

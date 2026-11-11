@@ -38,6 +38,12 @@ confetti ชุดใหญ่เมื่อเป้าหมายครบ 1
 ช่อง *Authorized JavaScript origins* ให้ใส่ `https://saratkung.github.io` (และ `http://localhost:8080` ถ้าจะทดสอบในเครื่อง)
 ใช้ได้เฉพาะเมื่อเปิดจากเว็บจริงหรือ localhost (หน้าตัวอย่างใน Claude เชื่อมต่อ Google ไม่ได้)
 
+## 💾 สำรองข้อมูลไป Google Drive
+
+เมื่อเชื่อมต่อ Google แล้ว ใน **ตั้งค่า → Google Calendar → สำรองข้อมูลไป Google Drive** จะสำรองงาน บันทึกประชุม เป้าหมาย และนัดหมาย
+เป็นไฟล์ `Life Planner – สำรองข้อมูล.json` ใน Drive ของคุณ (อัตโนมัติเมื่อข้อมูลเปลี่ยนและทุกวัน) แล้วกด **กู้คืนจาก Drive** บนเครื่องใหม่ได้
+แอปใช้สิทธิ์ `drive.file` ซึ่งเห็นเฉพาะไฟล์ที่แอปสร้างเอง และไม่ส่ง PIN ไปกับไฟล์สำรอง ต้องเปิดใช้ *Google Drive API* ในโปรเจกต์ Google Cloud ด้วย
+
 ## 📲 ใช้เป็นแอปบนมือถือ (PWA)
 
 แอปนี้เป็น Progressive Web App ติดตั้งลงหน้าจอโฮมได้ เปิดแบบเต็มจอเหมือนแอปทั่วไป และ**ใช้งานได้แม้ไม่มีอินเทอร์เน็ต**
@@ -86,7 +92,8 @@ js/
   pwa.js            ติดตั้งเป็นแอป, ลงทะเบียน service worker, แจ้งเมื่อมีเวอร์ชันใหม่
   sync/
     gcal.js         ซิงก์สองทางกับ Google Calendar (เข้าสู่ระบบ, ดึง, ส่ง, ลบ)
-    gcalPanel.js    ส่วนตั้งค่า Google Calendar
+    gcalPanel.js    ส่วนตั้งค่า Google Calendar และ Google Drive
+    drive.js        สำรอง / กู้คืนข้อมูลกับ Google Drive
   core/
     store.js        state + บันทึกลง localStorage + pub/sub + ข้อมูลตัวอย่าง
     selectors.js    คำนวณข้อมูล: นัดหมายทำซ้ำ, ความคืบหน้า, สถิติ, จัดเลนนัดที่เวลาซ้อนกัน

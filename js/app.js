@@ -13,6 +13,7 @@ import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
 import { splashStep, hideSplash } from './ui/splash.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
+import { setupDrive } from './sync/drive.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
 import { toast } from './ui/toast.js';
 
@@ -211,6 +212,7 @@ function init() {
   $('#btn-settings-m').addEventListener('click', () => openSettings());
   setupPWA({ onSuggestInstall: () => openSettings({ focusInstall: true }) });
   setupGcal();
+  setupDrive();
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);

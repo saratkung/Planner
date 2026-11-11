@@ -12,7 +12,10 @@
 import { store } from '../core/store.js';
 import { uid, toKey, addDays, fromKey, pad } from '../core/utils.js';
 
-const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+export const CAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+// drive.file: เห็นเฉพาะไฟล์ที่แอปนี้สร้างเอง ไม่เห็นไฟล์อื่นใน Drive
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const SCOPE = `${CAL_SCOPE} ${DRIVE_SCOPE}`;
 const API = 'https://www.googleapis.com/calendar/v3';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const PAST_DAYS = 30;
@@ -33,6 +36,7 @@ const DEFAULT_COLOR = '#0ea5e9';
 
 let token = null;
 let tokenExp = 0;
+let grantedScopes = '';
 let tokenClient = null;
 let gisPromise = null;
 let syncing = null; // Promise ของการซิงก์ที่กำลังทำ
@@ -56,6 +60,60 @@ export const onGcalChange = (fn) => {
 const cfg = () => store.state.settings.gcal;
 const setCfg = (patch) => store.setSettings({ gcal: { ...cfg(), ...patch } });
 const hasToken = () => !!token && Date.now() < tokenExp - 60000;
+export const hasGoogleToken = hasToken;
+export const hasScope = (scope) => hasToken() && grantedScopes.split(' ').includes(scope);
+
+/** ขอ token (ถ้า interactive) ให้มีสิทธิ์ตามที่ต้องการ */
+export async function ensureToken({ interactive = false, scope = CAL_SCOPE } = {}) {
+  if (hasScope(scope)) return token;
+  if (!interactive) {
+    const e = new Error('ต้องเข้าสู่ระบบ Google อีกครั้ง');
+    e.needsAuth = true;
+    throw e;
+  }
+  await requestToken({ consent: hasToken() && !hasScope(scope) });
+  if (!hasScope(scope)) throw new Error('ยังไม่ได้อนุญาตสิทธิ์ที่ต้องใช้ใน Google');
+  return token;
+}
+
+/** fetch ไปยัง Google API พร้อม token (ใช้ร่วมกับ Drive) */
+export async function googleFetch(url, { method = 'GET', headers = {}, body, json = true } = {}) {
+  if (!hasToken()) {
+    const e = new Error('ต้องเข้าสู่ระบบ Google อีกครั้ง');
+    e.needsAuth = true;
+    throw e;
+  }
+  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}`, ...headers }, body });
+  if (res.status === 401) {
+    token = null;
+    const e = new Error('ต้องเข้าสู่ระบบ Google อีกครั้ง');
+    e.needsAuth = true;
+    throw e;
+  }
+  if (res.status === 403) {
+    let msg = 'Google ไม่อนุญาต (403)';
+    try {
+      msg = (await res.json()).error?.message || msg;
+    } catch (_) {}
+    const e = new Error(/insufficient|scope/i.test(msg) ? 'ต้องอนุญาตให้แอปใช้ Google Drive ก่อน' : msg);
+    e.needsScope = /insufficient|scope/i.test(msg);
+    throw e;
+  }
+  if (res.status === 404) {
+    const e = new Error('ไม่พบไฟล์ใน Google Drive');
+    e.gone = true;
+    throw e;
+  }
+  if (!res.ok) {
+    let msg = `Google ตอบกลับ ${res.status}`;
+    try {
+      msg = (await res.json()).error?.message || msg;
+    } catch (_) {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return null;
+  return json ? res.json() : res.text();
+}
 const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Bangkok';
 
 /** ใช้งานได้ไหม (หน้าตัวอย่างใน Claude บล็อกการเชื่อมต่อ Google) */
@@ -98,6 +156,7 @@ async function requestToken({ consent = false } = {}) {
       callback: (res) => {
         if (res.error) return reject(new Error(authError(res.error)));
         token = res.access_token;
+        grantedScopes = res.scope || SCOPE;
         tokenExp = Date.now() + Number(res.expires_in || 3600) * 1000;
         resolve(token);
       },
@@ -493,6 +552,7 @@ export function disconnect({ keepEvents = true } = {}) {
   }
   token = null;
   tokenExp = 0;
+  grantedScopes = '';
   stopAuto();
   applyingRemote = true;
   try {

@@ -9,6 +9,7 @@ import { confirmDialog } from '../ui/modal.js';
 import {
   gcalStatus, onGcalChange, gcalAvailable, connect, disconnect, syncNow, setAutoCreate, preloadGcal,
 } from './gcal.js';
+import { backupNow, restoreLatest, setAutoBackup, backupStatus, onBackupChange } from './drive.js';
 
 export function timeAgo(ts) {
   if (!ts) return 'ยังไม่เคย';
@@ -29,7 +30,7 @@ function steps() {
       <summary>วิธีขอ Client ID (ทำครั้งเดียว ประมาณ 5 นาที)</summary>
       <ol class="install-steps">
         <li>เปิด <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud Console</a> แล้วสร้างโปรเจกต์ใหม่ (ตั้งชื่ออะไรก็ได้ เช่น Planner)</li>
-        <li>ไปที่ <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar API</a> แล้วกด <b>Enable</b></li>
+        <li>เปิดใช้ <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar API</a> และ <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a> (กด <b>Enable</b> ทั้งสองอัน)</li>
         <li>ไปที่ <a href="https://console.cloud.google.com/auth/branding" target="_blank" rel="noopener">OAuth consent screen</a> → กรอกชื่อแอปและอีเมล → เลือกประเภท <b>External</b></li>
         <li>ในหัวข้อ <b>Audience</b> กด <b>Add users</b> แล้วใส่อีเมล Gmail ของคุณเป็น Test user</li>
         <li>ไปที่ <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credentials</a> → <b>Create credentials → OAuth client ID</b> → เลือก <b>Web application</b></li>
@@ -86,6 +87,38 @@ function inner() {
     <div class="chips">
       <button class="btn btn-primary btn-sm" type="button" data-gc="sync" ${st.state === 'syncing' ? 'disabled' : ''}>${icon('repeat')}ซิงก์ตอนนี้</button>
       <button class="btn btn-ghost btn-sm" type="button" data-gc="disconnect">ยกเลิกการเชื่อมต่อ</button>
+    </div>
+    ${driveSection()}`;
+}
+
+function driveSection() {
+  const b = store.state.settings.backup;
+  const st = backupStatus();
+  const line =
+    st.state === 'working'
+      ? '<span class="gc-dot spin"></span>กำลังทำงานกับ Google Drive…'
+      : st.state === 'error'
+      ? '<span class="gc-dot bad"></span>สำรองไม่สำเร็จ'
+      : st.state === 'needs-auth'
+      ? '<span class="gc-dot warn"></span>กด "สำรองตอนนี้" เพื่ออนุญาตให้ใช้ Google Drive'
+      : b.lastBackup
+      ? `<span class="gc-dot ok"></span>สำรองล่าสุด ${timeAgo(b.lastBackup)}`
+      : '<span class="gc-dot warn"></span>ยังไม่เคยสำรองข้อมูล';
+  return `
+    <div class="gc-sub">
+      <div class="install-head"><span class="gc-sub-ico">💾</span><div><b>สำรองข้อมูลไป Google Drive</b>
+        <p class="muted">งาน บันทึกประชุม เป้าหมาย และนัดหมาย เก็บเป็นไฟล์เดียวใน Drive ของคุณ</p></div></div>
+      <p class="gc-state">${line}</p>
+      ${st.error ? `<p class="gc-error">${icon('alert')}${esc(st.error)}</p>` : ''}
+      <label class="switch-row">
+        <input type="checkbox" id="bk-auto" ${b.auto ? 'checked' : ''} />
+        <span class="switch" aria-hidden="true"></span>
+        <span>สำรองอัตโนมัติเมื่อข้อมูลเปลี่ยน และทุกวัน</span>
+      </label>
+      <div class="chips">
+        <button class="btn btn-outline btn-sm" type="button" data-gc="backup" ${st.state === 'working' ? 'disabled' : ''}>${icon('upload')}สำรองตอนนี้</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-gc="restore" ${st.state === 'working' ? 'disabled' : ''}>${icon('download')}กู้คืนจาก Drive</button>
+      </div>
     </div>`;
 }
 
@@ -101,10 +134,12 @@ export function bindGcalSection(root, { closeSettings } = {}) {
     if (val != null && $('#gc-client', box)) $('#gc-client', box).value = val;
     if (focusedClient) $('#gc-client', box)?.focus();
   };
-  const off = onGcalChange(rerender);
+  const offs = [onGcalChange(rerender), onBackupChange(rerender)];
+  const off = () => offs.forEach((f) => f());
 
   box.addEventListener('change', (e) => {
     if (e.target.id === 'gc-auto') setAutoCreate(e.target.checked);
+    if (e.target.id === 'bk-auto') setAutoBackup(e.target.checked);
     if (e.target.id === 'gc-client') {
       store.setSettings({ gcal: { ...store.state.settings.gcal, clientId: e.target.value.trim() } });
       preloadGcal();
@@ -139,6 +174,30 @@ export function bindGcalSection(root, { closeSettings } = {}) {
         toast(err.message, { icon: '⚠️' });
       }
       rerender();
+    }
+    if (act === 'backup') {
+      try {
+        await backupNow({ interactive: true });
+        toast('สำรองข้อมูลไป Google Drive แล้ว', { icon: '💾' });
+      } catch (err) {
+        toast(err.message, { icon: '⚠️' });
+      }
+      rerender();
+    }
+    if (act === 'restore') {
+      closeSettings?.();
+      const ok = await confirmDialog({
+        title: 'กู้คืนข้อมูลจาก Google Drive?',
+        message: 'ข้อมูลในเครื่องนี้ (งาน นัดหมาย เป้าหมาย บันทึกประชุม) จะถูกแทนที่ด้วยไฟล์สำรองล่าสุดใน Drive',
+        okLabel: 'กู้คืนข้อมูล',
+      });
+      if (!ok) return;
+      try {
+        const f = await restoreLatest({ interactive: true });
+        toast(`กู้คืนข้อมูลแล้ว (สำรองไว้${timeAgo(new Date(f.modifiedTime).getTime())})`, { icon: '📥', duration: 4500 });
+      } catch (err) {
+        toast(err.message, { icon: '⚠️' });
+      }
     }
     if (act === 'disconnect') {
       closeSettings?.();
