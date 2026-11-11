@@ -54,6 +54,20 @@ export function installSteps() {
   ];
 }
 
+/** โหลดฟอนต์ผ่าน service worker อีกรอบ เพื่อเก็บไว้ใช้ตอนออฟไลน์ (ครั้งแรกที่ติดตั้ง) */
+async function warmFontCache() {
+  try {
+    const links = [...document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis.com"]')];
+    for (const l of links) {
+      const css = await (await fetch(l.href)).text();
+      const urls = [...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/g)].map((m) => m[1]);
+      await Promise.all(urls.map((u) => fetch(u).catch(() => {})));
+    }
+  } catch (_) {
+    /* ไม่มีอินเทอร์เน็ต: ไว้ครั้งหน้า */
+  }
+}
+
 export function setupPWA({ onSuggestInstall } = {}) {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -91,7 +105,8 @@ export function setupPWA({ onSuggestInstall } = {}) {
         let reloaded = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // เปิดครั้งแรก (ยังไม่เคยมี service worker) ไม่ต้องรีโหลด: รีโหลดเฉพาะตอนอัปเดตเวอร์ชัน
-          if (!hadController || reloaded) return;
+          if (!hadController) return warmFontCache();
+          if (reloaded) return;
           reloaded = true;
           location.reload();
         });
