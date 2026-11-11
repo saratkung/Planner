@@ -11,6 +11,7 @@ import { toggleTask } from '../core/actions.js';
 import { icon } from '../ui/icons.js';
 import { checkbox, emptyState, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openEventForm } from '../forms/eventForm.js';
+import { openSmartPaste } from '../forms/smartPaste.js';
 import { openMeeting, statusLabel, linkLabel, initial, hue } from '../forms/meetingRoom.js';
 
 const RANGES = [
@@ -35,7 +36,7 @@ export default {
     return n ? `วันนี้มีประชุม ${n} รายการ` : 'วันนี้ไม่มีประชุม';
   },
 
-  mount(root) {
+  mount(root, { navigate } = {}) {
     const track = enterTracker();
     let range = 'today';
     let first = true;
@@ -47,7 +48,10 @@ export default {
         <section class="goal-stats" id="meet-stats"></section>
         <div class="tasks-toolbar">
           <div id="meet-range"></div>
-          <button class="btn btn-primary" id="meet-new">${icon('plus')}นัดประชุม</button>
+          <div class="meet-actions">
+            <button class="btn btn-outline" id="meet-paste">${icon('clipboard')}วางข้อความ</button>
+            <button class="btn btn-primary" id="meet-new">${icon('plus')}นัดประชุม</button>
+          </div>
         </div>
         <section id="meet-list"></section>
         <section class="card" id="meet-actions"></section>
@@ -181,6 +185,7 @@ export default {
     };
 
     $('#meet-new', root).addEventListener('click', () => openEventForm(null, { isMeeting: true }));
+    $('#meet-paste', root).addEventListener('click', () => openSmartPaste('', { navigate }));
 
     root.addEventListener('click', (e) => {
       if (e.target.closest('a[href]')) return; // ปุ่มเข้าร่วมเปิดลิงก์ตามปกติ

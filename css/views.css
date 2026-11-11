@@ -1272,3 +1272,79 @@
   .mood small { display: none; }
   .rv-big b { font-size: 22px; }
 }
+
+/* ================= smart paste ================= */
+.meet-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sp { display: flex; flex-direction: column; gap: 14px; }
+.sp-input .textarea { min-height: 120px; font-size: 14px; line-height: 1.6; }
+.sp-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.sp-private { margin-left: auto; font-size: 12px; color: var(--muted); }
+.sp-results { display: flex; flex-direction: column; gap: 10px; }
+.sp-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--border-strong);
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.sp-empty span { font-size: 24px; animation: float 5s ease-in-out infinite; }
+.sp-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 14px 18px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: opacity 0.25s, border-color 0.2s, box-shadow 0.25s;
+}
+.sp-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--c);
+  transition: background-color 0.3s;
+}
+.sp-item.off { opacity: 0.5; }
+.sp-item.off .spi-title, .sp-item.off .sp-row, .sp-item.off .sp-found, .sp-item.off .sp-warn { pointer-events: none; }
+.sp-item.flip { animation: spFlip 0.45s var(--spring); }
+@keyframes spFlip { 0% { transform: scale(0.97); } 60% { transform: scale(1.015); } 100% { transform: none; } }
+.sp-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sp-inc { flex-shrink: 0; }
+.sp-types { display: inline-flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.sp-type {
+  border: 0;
+  background: transparent;
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: background-color 0.2s, color 0.2s, transform 0.2s var(--spring);
+}
+.sp-type.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); transform: scale(1.04); }
+.spi-title { font-weight: 600; height: 42px; font-size: 15px; }
+.sp-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.sp-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; min-width: 0; }
+.sp-field.grow { flex: 2 1 180px; }
+.sp-field > span { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.sp-field .input { height: 40px; }
+.sp-found, .sp-warn { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-found .tag { animation: popIn 0.35s var(--spring) both; }
+.sp-found .tag:nth-child(2) { animation-delay: 50ms; }
+.sp-found .tag:nth-child(3) { animation-delay: 100ms; }
+.sp-found .tag:nth-child(4) { animation-delay: 150ms; }
+.sp-warn .tag { white-space: normal; line-height: 1.4; }
+.sp-count { font-size: 13px; color: var(--muted); }
+@media (max-width: 760px) {
+  .sp-private { margin-left: 0; width: 100%; }
+  .sp-type { padding: 5px 8px; font-size: 12.5px; }
+}

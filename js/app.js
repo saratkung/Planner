@@ -9,6 +9,7 @@ import { isModalOpen } from './ui/modal.js';
 import { openTaskForm } from './forms/taskForm.js';
 import { openEventForm } from './forms/eventForm.js';
 import { openGoalForm } from './forms/goalForm.js';
+import { openSmartPaste } from './forms/smartPaste.js';
 import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
 import { splashStep, hideSplash } from './ui/splash.js';
@@ -41,6 +42,7 @@ function buildNav() {
   $('#btn-settings-m').innerHTML = icon('settings');
   $('#btn-quick').innerHTML = `${icon('plus')}<span class="label">สร้างใหม่</span>`;
   $('#quick-menu').innerHTML = [
+    ['paste', 'clipboard', 'วางข้อความ → แปลงอัตโนมัติ', '#d9a21b', 'V'],
     ['task', 'checkSquare', 'งานใหม่', '#6366f1', 'N'],
     ['meeting', 'users', 'นัดประชุม', '#0ea5e9', 'M'],
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
@@ -136,6 +138,7 @@ function setupQuickMenu() {
 }
 
 function quickCreate(kind) {
+  if (kind === 'paste') return openSmartPaste('', { navigate });
   if (kind === 'task') openTaskForm();
   if (kind === 'event') openEventForm();
   if (kind === 'meeting') openEventForm(null, { isMeeting: true });
@@ -167,6 +170,7 @@ function setupShortcuts() {
     if (k === 'n') { e.preventDefault(); openTaskForm(); }
     else if (k === 'e') { e.preventDefault(); openEventForm(); }
     else if (k === 'm') { e.preventDefault(); openEventForm(null, { isMeeting: true }); }
+    else if (k === 'v') { e.preventDefault(); openSmartPaste('', { navigate }); }
     else if (k === 'g') { e.preventDefault(); openGoalForm(); }
     else if (k === 't') toggleTheme();
     else if (/^[1-9]$/.test(k) && FEATURES[Number(k) - 1]) navigate(FEATURES[Number(k) - 1].id);
@@ -203,6 +207,28 @@ function setupSyncButton() {
   render();
 }
 
+// ---------- วางข้อความ / แชร์มาจากแอปอื่น ----------
+function setupSmartPaste() {
+  // วางข้อความ (Ctrl/Cmd+V หรือกดค้างแล้ววาง) ตรงไหนก็ได้ที่ไม่ใช่ช่องกรอก
+  document.addEventListener('paste', (e) => {
+    if (isModalOpen() || isLocked()) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    const text = e.clipboardData?.getData('text/plain')?.trim();
+    if (!text || text.length < 3) return;
+    e.preventDefault();
+    openSmartPaste(text, { navigate });
+  });
+}
+
+/** Android: แชร์ข้อความจาก LINE ฯลฯ มาที่ Planner (manifest share_target) */
+function sharedText() {
+  const q = new URLSearchParams(location.search);
+  const parts = ['title', 'text', 'url'].map((k) => q.get(k)).filter(Boolean);
+  if (!parts.length) return '';
+  history.replaceState(null, '', location.pathname + location.hash);
+  return [...new Set(parts)].join('\n');
+}
+
 // ---------- boot ----------
 function init() {
   splashStep(35, 'กำลังโหลดข้อมูล…');
@@ -219,6 +245,7 @@ function init() {
   setupGcal();
   setupDrive();
   setupLock();
+  setupSmartPaste();
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);
@@ -247,7 +274,9 @@ function init() {
   const fontsReady = Promise.race([document.fonts?.ready || Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]);
   fontsReady.then(() => {
     splashStep(90, 'เกือบเสร็จแล้ว…');
+    const shared = sharedText();
     hideSplash(() => {
+      if (shared) setTimeout(() => openSmartPaste(shared, { navigate }), 300);
       // เล่น animation ของหน้าแรกอีกครั้งตอนเปิดเข้าแอป
       const first = viewEl.firstElementChild;
       if (first) {
