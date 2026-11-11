@@ -35,6 +35,17 @@ def trim_transparent(img):
     return img.crop(bbox) if bbox else img
 
 
+def fill_dark_corners(img):
+    """โลโก้ที่มุมเป็นสีดำ (ไม่โปร่งใส): เติมมุมด้วยสีกรมท่าให้กลืนกับไอคอน"""
+    img = img.convert("RGB")
+    w, h = img.size
+    for xy in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        r, g, b = img.getpixel(xy)
+        if r + g + b < 90:
+            ImageDraw.floodfill(img, xy, NAVY, thresh=70)
+    return img.convert("RGBA")
+
+
 def fallback(size):
     """ไอคอนสำรอง: ท้องฟ้ากลางคืนสีม่วง + คลิปบอร์ดเช็กลิสต์ + คลิปสีทอง"""
     S = size * 4
@@ -84,7 +95,7 @@ def fallback(size):
 
 def main():
     if LOGO.exists():
-        src = square_crop(trim_transparent(Image.open(LOGO).convert("RGBA")))
+        src = fill_dark_corners(square_crop(trim_transparent(Image.open(LOGO).convert("RGBA"))))
         art = lambda s: src.resize((s, s), Image.LANCZOS)
         print("ใช้โลโก้จาก", LOGO)
     else:
@@ -104,7 +115,9 @@ def main():
     a = Image.new("RGB", (180, 180), NAVY)
     a.paste(art(180), (0, 0), art(180))
     a.save(ICONS / "apple-touch-icon.png")
-    print("สร้างไอคอนแล้ว:", ", ".join(p.name for p in sorted(ICONS.glob("*.png"))))
+    # รูปโลโก้สำหรับหน้าโหลด (เล็ก โหลดไว)
+    rounded(art(420), 0.2).save(ICONS / "splash-logo.webp", quality=86, method=6)
+    print("สร้างไอคอนแล้ว:", ", ".join(p.name for p in sorted(ICONS.glob("*.*"))))
 
 
 if __name__ == "__main__":
