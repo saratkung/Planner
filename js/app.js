@@ -11,6 +11,7 @@ import { openEventForm } from './forms/eventForm.js';
 import { openGoalForm } from './forms/goalForm.js';
 import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
+import { splashStep, hideSplash } from './ui/splash.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
 import { toast } from './ui/toast.js';
@@ -198,6 +199,7 @@ function setupSyncButton() {
 
 // ---------- boot ----------
 function init() {
+  splashStep(35, 'กำลังโหลดข้อมูล…');
   applyTheme();
   buildNav();
   renderThemeBtn();
@@ -230,9 +232,25 @@ function init() {
   });
 
   window.addEventListener('hashchange', route);
+  splashStep(70, 'กำลังจัดตารางวันนี้…');
   route();
   updateBadge();
   // fonts can change nav metrics after load
+  const fontsReady = Promise.race([document.fonts?.ready || Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]);
+  fontsReady.then(() => {
+    splashStep(90, 'เกือบเสร็จแล้ว…');
+    hideSplash(() => {
+      // เล่น animation ของหน้าแรกอีกครั้งตอนเปิดเข้าแอป
+      const first = viewEl.firstElementChild;
+      if (first) {
+        first.classList.remove('view-enter');
+        void first.offsetWidth;
+        first.classList.add('view-enter');
+      }
+      document.querySelector('.app')?.classList.add('app-reveal');
+      moveIndicators();
+    });
+  });
   document.fonts?.ready.then(() => {
     moveIndicators();
     active?.instance?.onResize?.();

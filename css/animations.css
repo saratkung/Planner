@@ -143,3 +143,10 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* เปิดเข้าแอปหลังหน้าโหลด */
+@keyframes appReveal {
+  from { opacity: 0; transform: scale(0.985); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.app-reveal { animation: appReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
