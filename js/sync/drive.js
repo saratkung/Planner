@@ -11,8 +11,6 @@ import { googleFetch, ensureToken, hasScope, DRIVE_SCOPE, gcalAvailable } from '
 const FILES = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 const NAME = 'Life Planner – สำรองข้อมูล.json';
-const AUTO_DELAY_MS = 2 * 60 * 1000; // สำรองหลังแก้ไขข้อมูลล่าสุด 2 นาที
-const DAILY_MS = 24 * 60 * 60 * 1000;
 
 const cfg = () => store.state.settings.backup;
 const setCfg = (patch) => store.setSettings({ backup: { ...cfg(), ...patch } });
@@ -45,37 +43,63 @@ async function findFile() {
   return res.files?.[0] || null;
 }
 
-/** สำรองตอนนี้ (interactive = มาจากการกดปุ่ม ขอเข้าสู่ระบบได้) */
-export async function backupNow({ interactive = false } = {}) {
-  if (!connected()) throw new Error('ยังไม่ได้เชื่อมต่อ Google');
-  setStatus({ state: 'working', error: '' });
-  try {
-    await ensureToken({ interactive, scope: DRIVE_SCOPE });
-    const data = store.exportJSON();
-    const existing = await findFile();
-    let file;
-    if (existing) {
-      file = await googleFetch(`${UPLOAD}/${existing.id}?uploadType=media&fields=id,modifiedTime,size`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: data,
-      });
-    } else {
-      const boundary = 'lp' + Math.random().toString(36).slice(2);
-      const meta = { name: NAME, mimeType: 'application/json', appProperties: { lifePlanner: 'backup' } };
-      const body =
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${data}\r\n--${boundary}--`;
-      file = await googleFetch(`${UPLOAD}?uploadType=multipart&fields=id,modifiedTime,size`, {
-        method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body,
-      });
-    }
-    setCfg({ fileId: file.id, lastBackup: Date.now() });
-    setStatus({ state: 'ok', error: '' });
-    return file;
-  } catch (e) {
-    setStatus({ state: e.needsAuth || e.needsScope ? 'needs-auth' : 'error', error: e.needsAuth ? '' : e.message });
-    throw e;
+let running = null;
+
+async function upload(existing) {
+  const data = store.exportJSON();
+  if (existing) {
+    return googleFetch(`${UPLOAD}/${existing.id}?uploadType=media&fields=id,modifiedTime,size`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: data,
+    });
   }
+  const boundary = 'lp' + Math.random().toString(36).slice(2);
+  const meta = { name: NAME, mimeType: 'application/json', appProperties: { lifePlanner: 'backup' } };
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${data}\r\n--${boundary}--`;
+  return googleFetch(`${UPLOAD}?uploadType=multipart&fields=id,modifiedTime,size`, {
+    method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body,
+  });
 }
+
+/**
+ * ซิงก์ข้อมูลระหว่างเครื่อง: ดาวน์โหลดไฟล์ใน Drive -> รวมกับข้อมูลในเครื่อง -> อัปโหลดกลับ
+ * (interactive = มาจากการกดปุ่ม ขอเข้าสู่ระบบได้)
+ */
+export function syncData({ interactive = false } = {}) {
+  if (running) return running;
+  running = (async () => {
+    if (!connected()) throw new Error('ยังไม่ได้เชื่อมต่อ Google');
+    setStatus({ state: 'working', error: '' });
+    try {
+      await ensureToken({ interactive, scope: DRIVE_SCOPE });
+      const existing = await findFile();
+      let stats = { added: 0, updated: 0, removed: 0 };
+      if (existing) {
+        const text = await googleFetch(`${FILES}/${existing.id}?alt=media`, { json: false });
+        try {
+          stats = store.mergeRemote(JSON.parse(text));
+        } catch (err) {
+          if (err instanceof SyntaxError) console.warn('ไฟล์ใน Drive อ่านไม่ได้ จะเขียนทับด้วยข้อมูลในเครื่อง');
+          else throw err;
+        }
+      }
+      const file = await upload(existing);
+      setCfg({ fileId: file.id, lastBackup: Date.now() });
+      setStatus({ state: 'ok', error: '' });
+      return { ...stats, file };
+    } catch (e) {
+      setStatus({ state: e.needsAuth || e.needsScope ? 'needs-auth' : 'error', error: e.needsAuth ? '' : e.message });
+      throw e;
+    } finally {
+      running = null;
+    }
+  })();
+  return running;
+}
+
+/** ชื่อเดิม (ปุ่ม "สำรองตอนนี้") = ซิงก์ */
+export const backupNow = syncData;
 
 /** ข้อมูลไฟล์สำรองล่าสุดใน Drive (ไม่ดาวน์โหลดเนื้อหา) */
 export async function latestBackupInfo({ interactive = false } = {}) {
@@ -105,29 +129,34 @@ export function setAutoBackup(on) {
   setCfg({ auto: !!on });
 }
 
-// ---------- สำรองอัตโนมัติ ----------
+// ---------- ซิงก์อัตโนมัติ ----------
+const AFTER_EDIT_MS = 15 * 1000; // ซิงก์หลังแก้ไขล่าสุด 15 วินาที
+const EVERY_MS = 3 * 60 * 1000; // และทุก 3 นาทีขณะเปิดแอป
+const canAuto = () => connected() && cfg().auto && hasScope(DRIVE_SCOPE);
+
 let timer = null;
-function scheduleAuto(delay = AUTO_DELAY_MS) {
+function scheduleAuto(delay = AFTER_EDIT_MS) {
   clearTimeout(timer);
-  timer = setTimeout(async () => {
-    if (!connected() || !cfg().auto || !hasScope(DRIVE_SCOPE)) return;
-    try {
-      await backupNow();
-    } catch (_) {
-      /* แสดงสถานะในหน้าตั้งค่า */
-    }
+  timer = setTimeout(() => {
+    if (canAuto()) syncData().catch(() => {});
   }, delay);
+}
+
+/** เรียกเมื่อได้สิทธิ์ Google ใหม่ (เช่น กดปุ่มซิงก์) */
+export function syncSoon() {
+  scheduleAuto(500);
 }
 
 export function setupDrive() {
   store.subscribe((c) => {
-    if (c.type === 'settings') return; // การเปลี่ยนค่าตั้งค่าเล็ก ๆ ไม่ต้องสำรองทันที
+    if (c.type === 'settings' || c.type === 'merge') return; // ไม่วนซิงก์ซ้ำ
     if (connected() && cfg().auto) scheduleAuto();
   });
-  // สำรองรายวัน: เมื่อเปิดแอปและมีสิทธิ์อยู่แล้ว
   setInterval(() => {
-    if (connected() && cfg().auto && hasScope(DRIVE_SCOPE) && Date.now() - (cfg().lastBackup || 0) > DAILY_MS) {
-      scheduleAuto(1000);
-    }
-  }, 60 * 1000);
+    if (document.visibilityState === 'visible' && canAuto()) syncData().catch(() => {});
+  }, EVERY_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && canAuto()) scheduleAuto(800);
+  });
+  if (canAuto()) scheduleAuto(1500); // เปิดแอป: ดึงข้อมูลล่าสุดจากเครื่องอื่น
 }

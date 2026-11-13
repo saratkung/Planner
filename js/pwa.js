@@ -88,27 +88,40 @@ export function setupPWA({ onSuggestInstall } = {}) {
         swOk = true;
         notify();
         maybeHint();
-        const askReload = (sw) =>
-          toast('มีเวอร์ชันใหม่ของแอป', {
-            icon: '🆕',
-            action: 'อัปเดต',
-            duration: 10000,
-            onAction: () => sw.postMessage('skipWaiting'),
-          });
-        if (reg.waiting && navigator.serviceWorker.controller) askReload(reg.waiting);
+        // มีเวอร์ชันใหม่: ติดตั้งให้เลยโดยไม่ต้องกด
+        const activate = (sw) => sw?.postMessage('skipWaiting');
+        if (reg.waiting && navigator.serviceWorker.controller) activate(reg.waiting);
         reg.addEventListener('updatefound', () => {
           const sw = reg.installing;
           sw?.addEventListener('statechange', () => {
-            if (sw.state === 'installed' && navigator.serviceWorker.controller) askReload(sw);
+            if (sw.state === 'installed' && navigator.serviceWorker.controller) activate(sw);
           });
         });
+        // กลับเข้าแอป (มือถือที่เปิดค้างไว้นาน ๆ): เช็กเวอร์ชันใหม่
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+        setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
         let reloaded = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // เปิดครั้งแรก (ยังไม่เคยมี service worker) ไม่ต้องรีโหลด: รีโหลดเฉพาะตอนอัปเดตเวอร์ชัน
-          if (!hadController) return warmFontCache();
+        const busy = () => !!document.querySelector('.modal-overlay, .lockscreen') || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+        const reloadWhenIdle = () => {
           if (reloaded) return;
+          if (busy()) {
+            // กำลังกรอกข้อมูลอยู่: ไม่รีโหลดทันที ถามก่อน
+            toast('อัปเดตแอปเป็นเวอร์ชันใหม่แล้ว', { icon: '🆕', action: 'รีโหลด', duration: 15000, onAction: () => location.reload() });
+            return;
+          }
           reloaded = true;
           location.reload();
+        };
+        let hasController = hadController;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          // ครั้งแรกที่ service worker เริ่มคุมหน้า ไม่ต้องรีโหลด: รีโหลดเฉพาะตอนเปลี่ยนเป็นเวอร์ชันใหม่
+          if (!hasController) {
+            hasController = true;
+            return warmFontCache();
+          }
+          reloadWhenIdle();
         });
       } catch (err) {
         console.warn('ลงทะเบียน service worker ไม่สำเร็จ', err);

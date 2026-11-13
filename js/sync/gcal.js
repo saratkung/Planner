@@ -38,6 +38,20 @@ const DEFAULT_COLOR = '#0ea5e9';
 let token = null;
 let tokenExp = 0;
 let grantedScopes = '';
+
+// เก็บสิทธิ์ Google (มีอายุ ~1 ชม.) ไว้ในเครื่อง เปิดแอปใหม่ภายในชั่วโมงจะซิงก์ได้ทันทีโดยไม่ต้องกดเข้าสู่ระบบ
+const TOKEN_KEY = 'planner.gtoken';
+function persistToken() {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, tokenExp, grantedScopes }));
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch (_) {}
+}
+try {
+  const t = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null');
+  if (t && t.tokenExp > Date.now() + 60000) ({ token, tokenExp, grantedScopes } = t);
+  else localStorage.removeItem(TOKEN_KEY);
+} catch (_) {}
 let tokenClient = null;
 let gisPromise = null;
 let syncing = null; // Promise ของการซิงก์ที่กำลังทำ
@@ -90,6 +104,7 @@ export async function googleFetch(url, { method = 'GET', headers = {}, body, jso
   const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}`, ...headers }, body });
   if (res.status === 401) {
     token = null;
+    persistToken();
     const e = new Error('ต้องเข้าสู่ระบบ Google อีกครั้ง');
     e.needsAuth = true;
     throw e;
@@ -162,6 +177,7 @@ async function requestToken({ consent = false } = {}) {
         token = res.access_token;
         grantedScopes = res.scope || SCOPE;
         tokenExp = Date.now() + Number(res.expires_in || 3600) * 1000;
+        persistToken();
         resolve(token);
       },
       error_callback: (err) => reject(new Error(authError(err?.type))),
@@ -191,6 +207,7 @@ async function api(path, { method = 'GET', body, query } = {}) {
   });
   if (res.status === 401) {
     token = null;
+    persistToken();
     const e = new Error('ต้องเข้าสู่ระบบ Google อีกครั้ง');
     e.needsAuth = true;
     throw e;
@@ -562,6 +579,7 @@ export function disconnect({ keepEvents = true } = {}) {
   token = null;
   tokenExp = 0;
   grantedScopes = '';
+  persistToken();
   stopAuto();
   applyingRemote = true;
   try {
@@ -607,7 +625,10 @@ export function setupGcal() {
   store.subscribe(onStoreChange);
   if (!cfg().enabled) return;
   preloadGcal();
-  setStatus({ state: 'needs-auth', lastSync: cfg().lastSync });
+  if (hasToken()) {
+    setStatus({ state: 'ok', lastSync: cfg().lastSync });
+    setTimeout(() => syncNow().catch(() => {}), 1200); // ยังมีสิทธิ์อยู่: ซิงก์เลย
+  } else setStatus({ state: 'needs-auth', lastSync: cfg().lastSync });
   startAuto();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && cfg().enabled && hasToken()) syncNow().catch(() => {});

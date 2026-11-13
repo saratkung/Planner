@@ -100,26 +100,26 @@ function driveSection() {
     st.state === 'working'
       ? '<span class="gc-dot spin"></span>กำลังทำงานกับ Google Drive…'
       : st.state === 'error'
-      ? '<span class="gc-dot bad"></span>สำรองไม่สำเร็จ'
+      ? '<span class="gc-dot bad"></span>ซิงก์ไม่สำเร็จ'
       : st.state === 'needs-auth'
-      ? '<span class="gc-dot warn"></span>กด "สำรองตอนนี้" เพื่ออนุญาตให้ใช้ Google Drive'
+      ? '<span class="gc-dot warn"></span>กด "ซิงก์ตอนนี้" เพื่อเข้าสู่ระบบ Google อีกครั้ง'
       : b.lastBackup
-      ? `<span class="gc-dot ok"></span>สำรองล่าสุด ${timeAgo(b.lastBackup)}`
-      : '<span class="gc-dot warn"></span>ยังไม่เคยสำรองข้อมูล';
+      ? `<span class="gc-dot ok"></span>ซิงก์ล่าสุด ${timeAgo(b.lastBackup)}`
+      : '<span class="gc-dot warn"></span>ยังไม่เคยซิงก์ กด "ซิงก์ตอนนี้" ในทุกเครื่อง';
   return `
     <div class="gc-sub">
-      <div class="install-head"><span class="gc-sub-ico">💾</span><div><b>สำรองข้อมูลไป Google Drive</b>
-        <p class="muted">งาน บันทึกประชุม เป้าหมาย และนัดหมาย เก็บเป็นไฟล์เดียวใน Drive ของคุณ</p></div></div>
+      <div class="install-head"><span class="gc-sub-ico">💾</span><div><b>ซิงก์ข้อมูลระหว่างเครื่อง</b>
+        <p class="muted">งาน นัด บันทึกประชุม และเป้าหมาย ตรงกันทั้งมือถือและคอม (ผ่านไฟล์ใน Google Drive ของคุณ)</p></div></div>
       <p class="gc-state">${line}</p>
       ${st.error ? `<p class="gc-error">${icon('alert')}${esc(st.error)}</p>` : ''}
       <label class="switch-row">
         <input type="checkbox" id="bk-auto" ${b.auto ? 'checked' : ''} />
         <span class="switch" aria-hidden="true"></span>
-        <span>สำรองอัตโนมัติเมื่อข้อมูลเปลี่ยน และทุกวัน</span>
+        <span>ซิงก์อัตโนมัติ (เมื่อเปิดแอป เมื่อแก้ไข และทุก 3 นาที)</span>
       </label>
       <div class="chips">
-        <button class="btn btn-outline btn-sm" type="button" data-gc="backup" ${st.state === 'working' ? 'disabled' : ''}>${icon('upload')}สำรองตอนนี้</button>
-        <button class="btn btn-ghost btn-sm" type="button" data-gc="restore" ${st.state === 'working' ? 'disabled' : ''}>${icon('download')}กู้คืนจาก Drive</button>
+        <button class="btn btn-outline btn-sm" type="button" data-gc="backup" ${st.state === 'working' ? 'disabled' : ''}>${icon('repeat')}ซิงก์ตอนนี้</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-gc="restore" ${st.state === 'working' ? 'disabled' : ''}>${icon('download')}กู้คืนจาก Drive (แทนที่ทั้งหมด)</button>
       </div>
     </div>`;
 }
@@ -181,7 +181,7 @@ export function bindGcalSection(root, { closeSettings } = {}) {
     if (act === 'backup') {
       try {
         await backupNow({ interactive: true });
-        toast('สำรองข้อมูลไป Google Drive แล้ว', { icon: '💾' });
+        toast('ซิงก์ข้อมูลแล้ว', { icon: '🔄' });
       } catch (err) {
         toast(err.message, { icon: '⚠️' });
       }

@@ -48,7 +48,12 @@ function normalize(data) {
     goals: Array.isArray(data.goals) ? data.goals : [],
     days: data.days && typeof data.days === 'object' ? data.days : {},
     settings: { ...defaultSettings(), ...(data.settings || {}) },
+    // การลบที่ต้องซิงก์ไปเครื่องอื่น: { tasks: { id: เวลาที่ลบ }, ... }
+    deleted: { tasks: {}, events: {}, goals: {}, days: {}, ...(data.deleted || {}) },
+    settingsUpdatedAt: data.settingsUpdatedAt || 0,
+    demoClearedAt: data.demoClearedAt || 0,
   };
+  [...COLLECTIONS].forEach((c) => s[c].forEach((it) => (it.updatedAt = it.updatedAt || it.createdAt || 0)));
   s.settings.gcal = { ...defaultGcal(), ...(s.settings.gcal || {}) };
   s.settings.backup = { ...defaultBackup(), ...(s.settings.backup || {}) };
   s.settings.lock = { ...defaultLock(), ...(s.settings.lock || {}) };
@@ -66,7 +71,69 @@ function normalize(data) {
   return s;
 }
 
+// ---------- ติดตามการเปลี่ยนแปลง (สำหรับซิงก์ระหว่างเครื่อง) ----------
+// เทียบกับครั้งก่อน: รายการที่เปลี่ยนได้ updatedAt ใหม่, รายการที่หายไปถูกบันทึกว่า "ลบ"
+const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd'];
+let sigs = null;
+const sigOf = (o) => {
+  const { updatedAt, ...rest } = o || {};
+  return JSON.stringify(rest);
+};
+const sharedSettingsSig = () => JSON.stringify(SHARED_SETTINGS.map((k) => state.settings[k]));
+
+function snapshotSigs() {
+  sigs = { settings: sharedSettingsSig() };
+  [...COLLECTIONS].forEach((c) => (sigs[c] = new Map(state[c].map((it) => [it.id, sigOf(it)]))));
+  sigs.days = new Map(Object.entries(state.days).map(([k, v]) => [k, sigOf(v)]));
+}
+
+function stamp() {
+  if (!sigs) return snapshotSigs();
+  const now = Date.now();
+  const del = state.deleted;
+  COLLECTIONS.forEach((c) => {
+    const seen = new Set();
+    state[c].forEach((it) => {
+      seen.add(it.id);
+      const sig = sigOf(it);
+      if (sigs[c].get(it.id) !== sig) {
+        it.updatedAt = now;
+        sigs[c].set(it.id, sig);
+        delete del[c][it.id];
+      }
+    });
+    [...sigs[c].keys()].forEach((id) => {
+      if (!seen.has(id)) {
+        del[c][id] = now;
+        sigs[c].delete(id);
+      }
+    });
+  });
+  const seenDays = new Set();
+  Object.entries(state.days).forEach(([k, v]) => {
+    seenDays.add(k);
+    const sig = sigOf(v);
+    if (sigs.days.get(k) !== sig) {
+      v.updatedAt = now;
+      sigs.days.set(k, sig);
+      delete del.days[k];
+    }
+  });
+  [...sigs.days.keys()].forEach((k) => {
+    if (!seenDays.has(k)) {
+      del.days[k] = now;
+      sigs.days.delete(k);
+    }
+  });
+  const ss = sharedSettingsSig();
+  if (ss !== sigs.settings) {
+    state.settingsUpdatedAt = now;
+    sigs.settings = ss;
+  }
+}
+
 function save() {
+  stamp();
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch (e) {
@@ -177,6 +244,69 @@ export const store = {
     return JSON.stringify({ ...state, settings, exportedAt: new Date().toISOString() }, null, 2);
   },
 
+  /**
+   * รวมข้อมูลจากเครื่องอื่น (ไฟล์ใน Google Drive): รายการไหนแก้ล่าสุดชนะ, การลบซิงก์ด้วย
+   * ค่าที่เป็นของเครื่องนี้ (Google, PIN, การแจ้งเตือน) ไม่ถูกแตะ
+   */
+  mergeRemote(remoteData) {
+    stamp(); // บันทึกการแก้ล่าสุดในเครื่องก่อน
+    const r = normalize(remoteData || {});
+    const stats = { added: 0, updated: 0, removed: 0 };
+    const DAY_MS = 86400000;
+    // tombstones: เอาเวลาล่าสุดของทั้งสองฝั่ง
+    const del = {};
+    [...COLLECTIONS, 'days'].forEach((c) => {
+      del[c] = { ...(r.deleted[c] || {}) };
+      Object.entries(state.deleted[c] || {}).forEach(([id, t]) => (del[c][id] = Math.max(del[c][id] || 0, t)));
+    });
+    // ข้อมูลตัวอย่าง: ถ้าเครื่องใดล้างไปแล้ว ให้ล้างทุกเครื่อง / ถ้ามีทั้งสองฝั่ง ใช้ของเครื่องนี้
+    const demoClearedAt = Math.max(state.demoClearedAt || 0, r.demoClearedAt || 0);
+    const localHasSeed = COLLECTIONS.some((c) => state[c].some((x) => x.seed));
+    COLLECTIONS.forEach((c) => {
+      const byId = new Map(state[c].map((x) => [x.id, x]));
+      r[c].forEach((ri) => {
+        if (ri.seed && (localHasSeed || demoClearedAt)) return;
+        const li = byId.get(ri.id);
+        if (!li) {
+          if ((del[c][ri.id] || 0) >= (ri.updatedAt || 0)) return;
+          state[c].push(ri);
+          byId.set(ri.id, ri);
+          stats.added++;
+        } else if ((ri.updatedAt || 0) > (li.updatedAt || 0)) {
+          Object.keys(li).forEach((k) => delete li[k]);
+          Object.assign(li, ri);
+          stats.updated++;
+        }
+      });
+      const before = state[c].length;
+      state[c] = state[c].filter((x) => !((del[c][x.id] || 0) >= (x.updatedAt || 0)) && !(x.seed && demoClearedAt && state.demoClearedAt !== demoClearedAt && demoClearedAt > (x.createdAt || 0)));
+      stats.removed += before - state[c].length;
+    });
+    Object.entries(r.days).forEach(([k, rv]) => {
+      const lv = state.days[k];
+      if ((!lv && !((del.days[k] || 0) >= (rv.updatedAt || 0))) || (lv && (rv.updatedAt || 0) > (lv.updatedAt || 0))) {
+        state.days[k] = rv;
+        stats.updated++;
+      }
+    });
+    Object.keys(state.days).forEach((k) => {
+      if ((del.days[k] || 0) >= (state.days[k].updatedAt || 0)) delete state.days[k];
+    });
+    if ((r.settingsUpdatedAt || 0) > (state.settingsUpdatedAt || 0)) {
+      SHARED_SETTINGS.forEach((k) => r.settings[k] !== undefined && (state.settings[k] = r.settings[k]));
+      state.settingsUpdatedAt = r.settingsUpdatedAt;
+    }
+    // เก็บประวัติการลบไว้ 90 วัน
+    const cutoff = Date.now() - 90 * DAY_MS;
+    Object.values(del).forEach((m) => Object.keys(m).forEach((id) => m[id] < cutoff && delete m[id]));
+    state.deleted = del;
+    state.demoClearedAt = demoClearedAt;
+    snapshotSigs(); // ข้อมูลที่รับมาไม่ถือเป็นการแก้ในเครื่องนี้
+    save();
+    listeners.forEach((fn) => fn({ type: 'merge', ...stats }));
+    return stats;
+  },
+
   /** ข้อมูลวางแผนรายวัน: { focus: [taskId], planned, reviewed, mood, note } */
   day(key) {
     return state.days[key] || { focus: [] };
@@ -192,13 +322,17 @@ export const store = {
     const keep = Object.fromEntries(DEVICE_KEYS.map((k) => [k, state.settings[k]]));
     state = normalize(data);
     Object.assign(state.settings, keep);
+    state.deleted = { ...state.deleted };
     emit({ type: 'reset' });
   },
 
   reset({ demo = true } = {}) {
     const settings = state.settings;
+    const deleted = state.deleted;
     state = demo ? seed() : normalize({});
     state.settings = settings;
+    state.deleted = deleted;
+    if (!demo) state.demoClearedAt = Date.now();
     emit({ type: 'reset' });
   },
 };
@@ -323,7 +457,9 @@ function seed() {
     task('อัปเดตบอร์ดงาน Sprint', d(-2), { meetingId: planning.id, meetingDate: d(-3), done: true, doneAt: now - 2 * day }),
   );
 
-  return { version: VERSION, tasks, events, goals, days: {}, settings: defaultSettings() };
+  // ทำเครื่องหมายว่าเป็นข้อมูลตัวอย่าง (ซิงก์หลายเครื่องจะไม่ได้ข้อมูลตัวอย่างซ้ำ)
+  [tasks, events, goals].forEach((list) => list.forEach((x) => (x.seed = true)));
+  return normalize({ version: VERSION, tasks, events, goals, days: {}, settings: defaultSettings() });
 }
 
 export { todayKey };

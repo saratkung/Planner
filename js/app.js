@@ -16,7 +16,7 @@ import { splashStep, hideSplash } from './ui/splash.js';
 import { setupLock, isLocked } from './ui/lock.js';
 import { setupNotify } from './ui/notify.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
-import { setupDrive } from './sync/drive.js';
+import { setupDrive, syncData } from './sync/drive.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
 import { toast } from './ui/toast.js';
 
@@ -195,15 +195,14 @@ function setupSyncButton() {
         ? `ซิงก์ไม่สำเร็จ: ${st.error}`
         : `Google Calendar · ซิงก์ล่าสุด ${timeAgo(store.state.settings.gcal.lastSync)}`;
   };
-  btn.addEventListener('click', async () => {
-    try {
-      const r = await syncNow({ interactive: true });
-      if (r) toast(syncSummary(r), { icon: '🔄' });
-    } catch (e) {
-      toast(e.message, { icon: '⚠️', action: 'ตั้งค่า', onAction: () => openSettings({ focusGcal: true }) });
-    }
-  });
+  btn.addEventListener('click', () => syncAll());
   onGcalChange(render);
+  // เปิดแอปแล้วยังไม่มีสิทธิ์ Google: ชวนแตะซิงก์ (ต้องแตะเอง เพราะเบราว์เซอร์ไม่ให้เปิดหน้าล็อกอินเอง)
+  setTimeout(() => {
+    const st = gcalStatus();
+    if (st.connected && st.state === 'needs-auth' && !isLocked())
+      toast('แตะเพื่อดึงข้อมูลล่าสุดจากเครื่องอื่น', { icon: '🔄', action: 'ซิงก์', duration: 9000, onAction: () => syncAll() });
+  }, 2600);
   store.subscribe((c) => c.type === 'settings' || c.type === 'sync' ? render() : null);
   render();
 }
@@ -228,6 +227,19 @@ function sharedText() {
   if (!parts.length) return '';
   history.replaceState(null, '', location.pathname + location.hash);
   return [...new Set(parts)].join('\n');
+}
+
+/** ซิงก์ทั้งหมด: ปฏิทิน Google + ข้อมูลระหว่างเครื่อง (Drive) */
+async function syncAll() {
+  try {
+    const cal = await syncNow({ interactive: true });
+    let data = null;
+    if (store.state.settings.backup.auto) data = await syncData({ interactive: true });
+    const n = (cal ? cal.added + cal.updated + cal.removed : 0) + (data ? data.added + data.updated + data.removed : 0);
+    toast(n ? `ซิงก์แล้ว: อัปเดต ${n} รายการ` : 'ซิงก์แล้ว ข้อมูลตรงกันทุกเครื่อง', { icon: '🔄' });
+  } catch (e) {
+    toast(e.message, { icon: '⚠️', action: 'ตั้งค่า', onAction: () => openSettings({ focusGcal: true }) });
+  }
 }
 
 // ---------- boot ----------
