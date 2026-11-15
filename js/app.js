@@ -16,6 +16,7 @@ import { setupPWA } from './pwa.js';
 import { splashStep, hideSplash } from './ui/splash.js';
 import { setupLock, isLocked } from './ui/lock.js';
 import { setupNotify } from './ui/notify.js';
+import { setupFocus, startFocus, focusActive } from './ui/focus.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
 import { setupDrive, syncData } from './sync/drive.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
@@ -46,6 +47,7 @@ function buildNav() {
   $('#quick-menu').innerHTML = [
     ['paste', 'clipboard', 'วางข้อความ → แปลงอัตโนมัติ', '#d9a21b', 'V'],
     ['task', 'checkSquare', 'งานใหม่', '#6366f1', 'N'],
+    ['focus', 'clock', 'จับเวลาโฟกัส 25 นาที', '#10b981', 'F'],
     ['meeting', 'users', 'นัดประชุม', '#0ea5e9', 'M'],
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
     ['goal', 'target', 'เป้าหมาย', '#10b981', 'G'],
@@ -141,6 +143,7 @@ function setupQuickMenu() {
 
 function quickCreate(kind) {
   if (kind === 'paste') return openSmartPaste('', { navigate });
+  if (kind === 'focus') return focusActive() ? toast('กำลังจับเวลาอยู่ แตะนาฬิกามุมล่างเพื่อดู', { icon: '⏱️' }) : startFocus();
   if (kind === 'task') openTaskForm();
   if (kind === 'event') openEventForm();
   if (kind === 'meeting') openEventForm(null, { isMeeting: true });
@@ -183,6 +186,7 @@ function setupShortcuts() {
     else if (k === 'e') { e.preventDefault(); openEventForm(); }
     else if (k === 'm') { e.preventDefault(); openEventForm(null, { isMeeting: true }); }
     else if (k === 'v') { e.preventDefault(); openSmartPaste('', { navigate }); }
+    else if (k === 'f') { e.preventDefault(); quickCreate('focus'); }
     else if (k === 'g') { e.preventDefault(); openGoalForm(); }
     else if (k === 't') toggleTheme();
     else if (/^[1-9]$/.test(k) && FEATURES[Number(k) - 1]) navigate(FEATURES[Number(k) - 1].id);
@@ -273,6 +277,7 @@ function init() {
   setupLock();
   setupSmartPaste();
   setupNotify();
+  setupFocus();
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);

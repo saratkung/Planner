@@ -11,6 +11,7 @@ import { checkbox, emptyState, segmented, bindSegmented, bar, animateMeters, met
 import { openTaskForm } from '../forms/taskForm.js';
 import { toast } from '../ui/toast.js';
 import { isFocus } from './dayplan.js';
+import { startFocus } from '../ui/focus.js';
 
 const FILTERS = [
   { id: 'today', label: 'วันนี้' },
@@ -231,6 +232,7 @@ export default {
       const id = row.dataset.task;
       if (e.target.closest('[data-check]')) return toggleTask(id, e.target.closest('[data-check]'));
       if (e.target.closest('[data-del]')) return removeWithUndo('tasks', id, row);
+      if (e.target.closest('[data-focus]')) return startFocus(id);
       openTaskForm(store.find('tasks', id));
     });
 
@@ -267,10 +269,12 @@ function taskRow(t, track) {
           ${!t.done && isFocus(t.id) ? '<span class="tag gold">⭐ สำคัญวันนี้</span>' : ''}
           ${t.repeat && t.repeat !== 'none' ? `<span class="tag accent">${icon('repeat')}${REPEATS.find((r) => r.id === t.repeat)?.label || ''}</span>` : ''}
           ${t.notes ? `<span class="tag" title="${esc(t.notes)}">${icon('note')}</span>` : ''}
+          ${t.focusMins ? `<span class="tag">⏱️ ${t.focusMins} นาที</span>` : ''}
         </div>
       </div>
       <span class="prio-flag" title="ความสำคัญ${p.label}">${icon('flag')}<span>${p.label}</span></span>
       <div class="row-actions">
+        ${t.done ? '' : `<button class="icon-btn sm" data-focus aria-label="จับเวลาโฟกัสงานนี้" title="จับเวลาโฟกัส">⏱️</button>`}
         <button class="icon-btn sm" data-edit aria-label="แก้ไข">${icon('edit')}</button>
         <button class="icon-btn sm danger" data-del aria-label="ลบ">${icon('trash')}</button>
       </div>

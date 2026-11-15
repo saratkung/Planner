@@ -241,6 +241,7 @@ export function weekStats(offset = 0) {
       eventMins: mins(evs),
       mood: store.day(k).mood || null,
       focus: (store.day(k).focus || []).length,
+      focusMins: store.day(k).focusMins || 0,
       focusDone: focusTasks(k).filter((t) => t.done).length,
       evs,
     };
@@ -266,5 +267,6 @@ export function weekStats(offset = 0) {
     meetings: meetingOcc.length, meetingMins: perDay.reduce((a, d) => a + d.meetingMins, 0),
     pastMeetings: pastMeetings.length, withNotes, byCategory, milestones, goals,
     focusTotal: perDay.reduce((a, d) => a + d.focus, 0), focusDone: perDay.reduce((a, d) => a + d.focusDone, 0),
+    focusMins: perDay.reduce((a, d) => a + d.focusMins, 0),
   };
 }

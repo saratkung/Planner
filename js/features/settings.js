@@ -8,6 +8,8 @@ import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
+import { setAI, aiParse } from '../sync/ai.js';
+import { setFocusCfg } from '../ui/focus.js';
 import { setupPin, disablePin, verifyPin, lockNow, setLockAfter, lockSupported } from '../ui/lock.js';
 import { enableNotify, disableNotify, setNotifyOption, testNotify, notifyPermission, notifySupported, isIOS } from '../ui/notify.js';
 import { isStandalone, canPromptInstall, promptInstall, installSteps, onInstallChange, pwaSupported, isEmbedded } from '../pwa.js';
@@ -38,6 +40,45 @@ function installSection() {
     ${canPromptInstall()
       ? `<button class="btn btn-primary btn-sm" data-install>${icon('download')}ติดตั้งแอป</button>`
       : `<ol class="install-steps">${installSteps().map((t) => `<li>${t}</li>`).join('')}</ol>`}
+  </div>`;
+}
+
+function focusSectionHTML() {
+  const f = { mins: 25, breakMins: 5, autoBreak: true, ...(store.state.settings.focus || {}) };
+  const sel = (id, val, opts) => `<select class="select" id="${id}">${opts.map((m) => `<option value="${m}" ${Number(val) === m ? 'selected' : ''}>${m} นาที</option>`).join('')}</select>`;
+  return `<div class="gc-box">
+    <div class="install-head"><span class="gc-sub-ico">⏱️</span><div><b>จับเวลาโฟกัส</b><p class="muted">กด ⏱️ หน้างาน หรือปุ่ม + → จับเวลาโฟกัส (คีย์ลัด F)</p></div></div>
+    <div class="row">
+      <div class="field"><label for="fo-mins">โฟกัส</label>${sel('fo-mins', f.mins, [15, 25, 30, 45, 50, 60])}</div>
+      <div class="field"><label for="fo-break">พัก</label>${sel('fo-break', f.breakMins, [5, 10, 15, 20])}</div>
+    </div>
+    <label class="switch-row"><input type="checkbox" id="fo-auto" ${f.autoBreak ? 'checked' : ''} /><span class="switch" aria-hidden="true"></span><span>เริ่มพักอัตโนมัติเมื่อจบรอบ</span></label>
+  </div>`;
+}
+
+function aiSectionHTML() {
+  const a = store.state.settings.ai || {};
+  return `<div class="gc-box" id="ai-box">
+    <div class="install-head"><span class="gc-sub-ico">✨</span><div><b>AI ช่วยอ่านข้อความ (ไม่บังคับ)</b>
+      <p class="muted">ใช้ Claude อ่านข้อความยาก ๆ ตอน "วางข้อความ" แม่นกว่าการอ่านปกติ</p></div></div>
+    <p class="gc-error ai-warn">⚠️ ข้อความที่กด "ให้ AI อ่าน" จะถูกส่งไปประมวลผลที่ Anthropic (นอกเครื่อง) อย่าใช้กับข้อมูลลับของทางราชการ · การอ่านแบบปกติยังทำในเครื่องเหมือนเดิม</p>
+    <label class="switch-row"><input type="checkbox" id="ai-on" ${a.enabled ? 'checked' : ''} /><span class="switch" aria-hidden="true"></span><span>เปิดปุ่ม "✨ ให้ AI อ่าน"</span></label>
+    <div class="field">
+      <label for="ai-code">รหัสใช้งาน AI</label>
+      <input class="input" id="ai-code" type="password" autocomplete="off" value="${esc(a.code || '')}" placeholder="รหัสเดียวกับ AI_ACCESS_CODE ใน Vercel" />
+    </div>
+    <div class="chips"><button class="btn btn-outline btn-sm" type="button" data-ai="test">ทดสอบการเชื่อมต่อ</button></div>
+    <p class="muted gc-note" id="ai-result"></p>
+    <details class="gc-help"><summary>วิธีตั้งค่า (ทำครั้งเดียว)</summary>
+      <ol class="install-steps">
+        <li>สมัคร/เข้าสู่ระบบ <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> → เติมเครดิต → สร้าง <b>API key</b></li>
+        <li>Vercel → โปรเจกต์ plannercsd → <b>Settings → Environment Variables</b> เพิ่ม
+          <code>ANTHROPIC_API_KEY</code> = คีย์ที่ได้ และ <code>AI_ACCESS_CODE</code> = รหัสที่ตั้งเอง (เช่น วลีที่จำได้)</li>
+        <li>Vercel → <b>Deployments</b> → ⋯ → <b>Redeploy</b></li>
+        <li>กลับมาที่นี่ ใส่รหัสเดียวกับ <code>AI_ACCESS_CODE</code> แล้วกด "ทดสอบการเชื่อมต่อ"</li>
+      </ol>
+      <p class="muted gc-note">ค่าใช้จ่ายคิดตามการใช้จริงกับบัญชี Anthropic ของคุณ ข้อความสั้น ๆ ประมาณครั้งละไม่ถึง 1–2 บาท</p>
+    </details>
   </div>`;
 }
 
@@ -103,6 +144,8 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       <div id="st-install">${installSection()}</div>
       ${gcalSectionHTML()}
       ${notifySectionHTML()}
+      ${focusSectionHTML()}
+      ${aiSectionHTML()}
       ${lockSectionHTML()}
       <div class="field">
         <label for="st-name">ชื่อของคุณ</label>
@@ -158,7 +201,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
           <button class="btn btn-danger btn-sm" data-clear>${icon('trash')}ล้างข้อมูลทั้งหมด</button>
         </div>
       </div>
-      <p class="kbd-hint">⌨️ คีย์ลัด: <b>/</b> หรือ <b>Ctrl+K</b> ค้นหา · <b>V</b> วางข้อความ · <b>N</b> งานใหม่ · <b>M</b> นัดประชุม · <b>E</b> นัดหมายใหม่ · <b>G</b> เป้าหมายใหม่ · <b>1–6</b> สลับหน้า · <b>T</b> สลับธีม</p>
+      <p class="kbd-hint">⌨️ คีย์ลัด: <b>/</b> หรือ <b>Ctrl+K</b> ค้นหา · <b>V</b> วางข้อความ · <b>F</b> โฟกัส · <b>N</b> งานใหม่ · <b>M</b> นัดประชุม · <b>E</b> นัดหมายใหม่ · <b>G</b> เป้าหมายใหม่ · <b>1–6</b> สลับหน้า · <b>T</b> สลับธีม</p>
     </div>`;
 
   openModal({
@@ -184,6 +227,31 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       offGcal = bindGcalSection(root, { closeSettings: close });
       $('#lk-after', root)?.addEventListener('change', (e) => setLockAfter(e.target.value));
       $('#nt-lead', root)?.addEventListener('change', (e) => setNotifyOption({ lead: Number(e.target.value) }));
+      $('#ai-on', root)?.addEventListener('change', (e) => setAI({ enabled: e.target.checked }));
+      $('#fo-mins', root)?.addEventListener('change', (e) => setFocusCfg({ mins: Number(e.target.value) }));
+      $('#fo-break', root)?.addEventListener('change', (e) => setFocusCfg({ breakMins: Number(e.target.value) }));
+      $('#fo-auto', root)?.addEventListener('change', (e) => setFocusCfg({ autoBreak: e.target.checked }));
+      $('#ai-code', root)?.addEventListener('change', (e) => setAI({ code: e.target.value.trim() }));
+      $('[data-ai="test"]', root)?.addEventListener('click', async (e) => {
+        const out = $('#ai-result', root);
+        const code = $('#ai-code', root).value.trim();
+        setAI({ code });
+        e.target.disabled = true;
+        out.textContent = 'กำลังทดสอบ…';
+        try {
+          const items = await aiParse('พรุ่งนี้ 9 โมงประชุมทีม ห้อง 5', { code });
+          const it = items[0];
+          out.innerHTML = it ? `✅ ใช้งานได้: “${esc(it.title)}” ${esc(it.date)} ${esc(it.start)}` : '✅ เชื่อมต่อได้';
+          if (!$('#ai-on', root).checked) {
+            $('#ai-on', root).checked = true;
+            setAI({ enabled: true });
+          }
+        } catch (err) {
+          out.innerHTML = `<span class="gc-error">${esc(err.message)}</span>`;
+        } finally {
+          e.target.disabled = false;
+        }
+      });
       root.addEventListener('change', (e) => {
         const k = e.target.dataset?.nt;
         if (k && e.target.type === 'checkbox') setNotifyOption({ [k]: e.target.checked });

@@ -612,3 +612,68 @@
   .pin-key { width: 62px; height: 62px; font-size: 22px; }
   .lock-logo { width: 64px; height: 64px; }
 }
+
+/* ---------- focus timer ---------- */
+.focus-dock {
+  position: fixed;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 6px 6px;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: var(--shadow-lg);
+  animation: popIn 0.4s var(--spring) both;
+}
+.focus-dock .icon-btn.sm { width: 30px; height: 30px; font-size: 11px; font-weight: 700; color: var(--text-2); }
+.fd-main { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 0 4px 0 0; color: var(--text); text-align: left; }
+.fd-ring { width: 40px; height: 40px; transform: rotate(-90deg); flex-shrink: 0; }
+.fd-track { fill: none; stroke: var(--surface-2); stroke-width: 5; }
+.fd-bar { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.focus-dock.break .fd-bar, .focus-full.break .fd-bar { stroke: var(--good); }
+.focus-dock.paused .fd-text b { opacity: 0.55; }
+.fd-text { display: flex; flex-direction: column; line-height: 1.15; max-width: 150px; }
+.fd-text b { font-family: var(--font-head); font-size: 17px; font-variant-numeric: tabular-nums; }
+.fd-text small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  .focus-dock { right: 12px; bottom: calc(var(--tabbar-h) + 20px + env(safe-area-inset-bottom, 0px)); }
+}
+
+.focus-full {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+  color: #f3f0ff;
+  background:
+    radial-gradient(55% 45% at 50% 40%, rgba(130, 112, 220, 0.45) 0%, transparent 70%),
+    linear-gradient(160deg, #1b1840 0%, #2a2563 55%, #3b3290 100%);
+  animation: fadeIn 0.35s ease both;
+}
+.focus-full.break { background: radial-gradient(55% 45% at 50% 40%, rgba(74, 222, 128, 0.25) 0%, transparent 70%), linear-gradient(160deg, #0f2a26 0%, #17403a 60%, #1f5a4f 100%); }
+.focus-full.closing { animation: modalOut 0.28s ease forwards; }
+.ff-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; width: min(420px, 100%); }
+.ff-mode { font-size: 13px; letter-spacing: 0.05em; opacity: 0.8; }
+.ff-ring { position: relative; width: min(260px, 70vw); aspect-ratio: 1; max-width: 100%; animation: breathe 8s ease-in-out infinite; }
+.ff-ring.paused { animation-play-state: paused; opacity: 0.75; }
+.ff-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ff-ring .fd-track { stroke: rgba(255, 255, 255, 0.12); stroke-width: 8; }
+.ff-ring .fd-bar { stroke: #e3b23c; stroke-width: 8; }
+@keyframes breathe { 0%, 100% { transform: scale(0.97); } 50% { transform: scale(1.03); } }
+.ff-time { position: absolute; inset: 0; display: grid; place-content: center; gap: 4px; }
+.ff-time b { font-family: var(--font-head); font-size: clamp(44px, 14vw, 60px); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+.ff-time span { font-size: 13px; opacity: 0.75; }
+.ff-title { font-family: var(--font-head); font-size: 19px; font-weight: 600; text-wrap: balance; }
+.ff-sub { font-size: 13px; opacity: 0.7; margin-top: -6px; }
+.ff-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+.ff-bottom { display: flex; gap: 8px; margin-top: 6px; }
+.ff-ghost { color: rgba(243, 240, 255, 0.75); }
+.ff-ghost:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.focus-go { width: 28px !important; height: 28px !important; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .ff-ring { animation: none; } }

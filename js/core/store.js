@@ -23,12 +23,17 @@ const defaultNotify = () => ({ enabled: false, lead: 10, events: true, tasks: tr
 const defaultSettings = () => ({
   name: '', theme: 'auto', weekStart: 0, workStart: '08:30', workEnd: '17:30',
   gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(), notify: defaultNotify(),
+  ai: { enabled: false, code: '' }, // AI ช่วยอ่านข้อความ (รหัสเก็บเฉพาะเครื่องนี้)
 });
 // ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
-const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify'];
+const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify', 'ai', 'focus'];
 
 let state = load();
 const listeners = new Set();
+// เปิดครั้งแรก: บันทึกข้อมูลตัวอย่างไว้ทันที (id ของรายการจะได้ไม่เปลี่ยนเมื่อรีโหลด)
+try {
+  if (!localStorage.getItem(KEY)) queueMicrotask(() => save());
+} catch (_) {}
 
 function load() {
   try {
@@ -242,6 +247,7 @@ export const store = {
   exportJSON() {
     const settings = { ...state.settings };
     delete settings.lock; // ไม่ส่ง PIN ออกไปกับไฟล์สำรอง
+    delete settings.ai; // รหัส AI เป็นของเครื่องนี้
     return JSON.stringify({ ...state, settings, exportedAt: new Date().toISOString() }, null, 2);
   },
 

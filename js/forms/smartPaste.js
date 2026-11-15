@@ -11,6 +11,7 @@ import { openModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { confetti } from '../ui/confetti.js';
+import { aiReady, aiParse } from '../sync/ai.js';
 
 const TYPES = [
   { id: 'meeting', label: 'ประชุม', emoji: '👥' },
@@ -51,6 +52,7 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
           <textarea class="textarea" id="sp-text" rows="5" placeholder="วางข้อความจาก LINE อีเมล หรือหนังสือเชิญประชุม…&#10;เช่น “ขอเชิญประชุม วันศุกร์นี้ 13.30 น. ณ ห้องประชุม 2”">${esc(initial)}</textarea>
           <div class="sp-tools">
             ${canRead ? `<button type="button" class="btn btn-outline btn-sm" data-sp="clip">${icon('clipboard')}วางจากคลิปบอร์ด</button>` : ''}
+            ${aiReady() ? `<button type="button" class="btn btn-sm btn-ai" data-sp="ai">✨ ให้ AI อ่าน</button>` : ''}
             <button type="button" class="btn btn-ghost btn-sm" data-sp="sample">${icon('sparkles')}ลองตัวอย่าง</button>
             <button type="button" class="btn btn-ghost btn-sm" data-sp="clear">${icon('x')}ล้าง</button>
             <span class="sp-private">🔒 ประมวลผลในเครื่อง ไม่ส่งข้อความไปที่ไหน</span>
@@ -92,7 +94,8 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
           it.agenda.length && `📝 ${it.agenda.length} วาระ`,
         ].filter(Boolean);
         return `
-          <article class="sp-item${it.include ? '' : ' off'}${animate ? ' enter' : ''}" data-i="${i}" style="--i:${i};--c:${COLOR[it.type] || 'var(--gold)'}">
+          <article class="sp-item${it.include ? '' : ' off'}${animate ? ' enter' : ''}${it.ai ? ' by-ai' : ''}" data-i="${i}" style="--i:${i};--c:${COLOR[it.type] || 'var(--gold)'}">
+            ${it.ai ? '<span class="sp-ai-badge">✨ อ่านโดย AI</span>' : ''}
             <div class="sp-head">
               <label class="switch-row sp-inc" title="เพิ่มรายการนี้">
                 <input type="checkbox" data-f="include" ${it.include ? 'checked' : ''} />
@@ -197,6 +200,29 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
           } catch (_) {
             toast('อ่านคลิปบอร์ดไม่ได้ ให้กดค้างในช่องแล้วเลือก "วาง" แทน', { icon: 'ℹ️' });
             ta.focus();
+          }
+        }
+        if (act === 'ai') {
+          const text = ta.value.trim();
+          if (!text) {
+            toast('วางข้อความก่อน แล้วค่อยให้ AI อ่าน', { icon: 'ℹ️' });
+            return;
+          }
+          const btn = e.target.closest('[data-sp="ai"]');
+          btn.disabled = true;
+          btn.classList.add('loading');
+          results.innerHTML = `<div class="sp-ai-loading"><span></span><span></span><span></span><p>AI กำลังอ่านข้อความ…</p></div>`;
+          try {
+            const got = await aiParse(text);
+            items = got.map((it) => ({ ...it, include: true }));
+            if (!items.length) toast('AI ไม่พบนัดหรืองานในข้อความนี้', { icon: 'ℹ️' });
+            render(true);
+          } catch (err) {
+            toast(err.message, { icon: '⚠️', duration: 5000 });
+            parse();
+          } finally {
+            btn.disabled = false;
+            btn.classList.remove('loading');
           }
         }
         if (act === 'sample') {

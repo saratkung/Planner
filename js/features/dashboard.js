@@ -21,6 +21,7 @@ import { toast } from '../ui/toast.js';
 import { dayMoment, openPlanDay, openReviewDay, toggleFocus, isFocus, star, MAX_FOCUS } from './dayplan.js';
 import { focusTasks } from '../core/selectors.js';
 import { openWeekly, weeklyCardHTML } from './weekly.js';
+import { startFocus } from '../ui/focus.js';
 
 function quoteOfDay() {
   const d = new Date();
@@ -184,6 +185,8 @@ export default {
     };
 
     root.addEventListener('click', (e) => {
+      const focusBtn = e.target.closest('[data-focus]');
+      if (focusBtn) return startFocus(focusBtn.closest('[data-task]').dataset.task);
       const starBtn = e.target.closest('[data-star]');
       if (starBtn) {
         const id = starBtn.closest('[data-task]').dataset.task;
@@ -284,6 +287,7 @@ function miniTask(t, track, focused = false) {
     <span class="mini-title">${esc(t.title)}</span>
     ${over ? '<span class="tag bad">เลยกำหนด</span>' : ''}
     ${t.time ? `<span class="tag">${t.time}</span>` : ''}
+    ${focused && !t.done ? `<button type="button" class="icon-btn sm focus-go" data-focus aria-label="จับเวลาโฟกัส" title="จับเวลาโฟกัส">⏱️</button>` : ''}
     <span class="prio-dot" style="--c:${priority(t.priority).color}" title="ความสำคัญ${priority(t.priority).label}"></span>
   </li>`;
 }

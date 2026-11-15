@@ -1,0 +1,10 @@
+{
+  "name": "life-planner",
+  "private": true,
+  "type": "module",
+  "description": "Life Planner web app (static) + Vercel function for AI message parsing",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "zod": "^4.6.7"
+  }
+}
