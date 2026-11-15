@@ -10,6 +10,7 @@ import { openTaskForm } from './forms/taskForm.js';
 import { openEventForm } from './forms/eventForm.js';
 import { openGoalForm } from './forms/goalForm.js';
 import { openSmartPaste } from './forms/smartPaste.js';
+import { openSearch } from './features/search.js';
 import { openSettings, applyTheme, isDark } from './features/settings.js';
 import { setupPWA } from './pwa.js';
 import { splashStep, hideSplash } from './ui/splash.js';
@@ -165,7 +166,17 @@ function toggleTheme() {
 // ---------- keyboard shortcuts ----------
 function setupShortcuts() {
   document.addEventListener('keydown', (e) => {
+    // ค้นหา: Ctrl/Cmd + K (ใช้ได้แม้กำลังพิมพ์อยู่)
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && !isLocked()) {
+      e.preventDefault();
+      if (!document.getElementById('srch-q')) openSearch({ navigate });
+      return;
+    }
     if (e.metaKey || e.ctrlKey || e.altKey || isModalOpen() || isLocked()) return;
+    if (e.key === '/' && !e.target.closest('input, textarea, select, [contenteditable]')) {
+      e.preventDefault();
+      return openSearch({ navigate });
+    }
     if (e.target.closest('input, textarea, select, [contenteditable]')) return;
     const k = e.key.toLowerCase();
     if (k === 'n') { e.preventDefault(); openTaskForm(); }
@@ -252,6 +263,8 @@ function init() {
   setupShortcuts();
 
   $('#btn-theme').addEventListener('click', toggleTheme);
+  $('#btn-search').innerHTML = icon('search');
+  $('#btn-search').addEventListener('click', () => openSearch({ navigate }));
   $('#btn-settings').addEventListener('click', () => openSettings());
   $('#btn-settings-m').addEventListener('click', () => openSettings());
   setupPWA({ onSuggestInstall: () => openSettings({ focusInstall: true }) });
