@@ -11,6 +11,7 @@ import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { checkbox } from '../ui/widgets.js';
 import { openEventForm } from './eventForm.js';
+import { saveTemplateFromEvent } from '../core/templates.js';
 
 export function statusLabel(m) {
   const st = meetingStatus(m);
@@ -49,9 +50,10 @@ export function openMeeting(eventId, dateKey) {
     size: 640,
     body: '<div id="mr"></div>',
     footer: `
-      <button class="btn btn-ghost btn-sm mr-foot-btn" type="button" data-edit>${icon('edit')}แก้ไขรายละเอียด</button>
+      <button class="btn btn-ghost btn-sm mr-foot-btn" type="button" data-edit>${icon('edit')}แก้ไข</button>
       <span class="spacer"></span>
-      <button class="btn btn-outline btn-sm mr-foot-btn" type="button" data-copy>${icon('copy')}คัดลอกสรุปประชุม</button>
+      <button class="icon-btn mr-copy-btn" type="button" data-copy title="คัดลอกข้อความ" aria-label="คัดลอกข้อความ">${icon('copy')}</button>
+      <button class="btn btn-outline btn-sm mr-foot-btn mr-share" type="button" data-share>${icon('upload')}<span data-share-label>แชร์</span></button>
       <button class="btn btn-primary btn-sm hide-mobile" type="button" data-close>${icon('check')}เสร็จ</button>`,
     onClose: () => {
       flushNotes();
@@ -98,7 +100,8 @@ export function openMeeting(eventId, dateKey) {
               </div>` : ''}
 
             <div class="mr-section">
-              <h4 class="section-title">${icon('list')} วาระการประชุม</h4>
+              <h4 class="section-title">${icon('list')} วาระการประชุม
+                <button type="button" class="link-btn mr-tpl" data-save-tpl title="ใช้วาระนี้ซ้ำในการประชุมครั้งหน้า">💾 บันทึกเป็นแม่แบบ</button></h4>
               ${ev.agenda.length
                 ? `<ul class="agenda-list">${ev.agenda
                     .map((a, i) => {
@@ -132,6 +135,8 @@ export function openMeeting(eventId, dateKey) {
             </div>
           </div>`;
 
+        const lbl = root.querySelector('[data-share-label]');
+        if (lbl) lbl.textContent = isSummary(occ) ? 'แชร์สรุปประชุม' : 'แชร์นัดประชุม';
         const ta = $('#mr-notes', host);
         if (hadFocus) {
           ta.focus();
@@ -151,6 +156,8 @@ export function openMeeting(eventId, dateKey) {
         saveTimer = setTimeout(() => {
           flushNotes();
           st.textContent = 'บันทึกแล้ว ✓';
+          const lbl = root.querySelector('[data-share-label]');
+          if (lbl) lbl.textContent = isSummary({ ...store.find('events', eventId), occurrence: dateKey }) ? 'แชร์สรุปประชุม' : 'แชร์นัดประชุม';
         }, 600);
       });
 
@@ -200,6 +207,35 @@ export function openMeeting(eventId, dateKey) {
       };
       root.querySelector('.modal-foot [data-edit]').addEventListener('click', editDetails);
 
+      root.querySelector('[data-share]').addEventListener('click', async () => {
+        flushNotes();
+        const ev = store.find('events', eventId);
+        const text = meetingSummary(ev, dateKey);
+        const title = `${isSummary({ ...ev, occurrence: dateKey }) ? 'สรุปการประชุม' : 'นัดประชุม'}: ${ev.title}`;
+        if (navigator.share) {
+          try {
+            await navigator.share({ title, text });
+            toast('แชร์แล้ว', { icon: '📤' });
+            return;
+          } catch (err) {
+            if (err?.name === 'AbortError') return; // ผู้ใช้ปิดหน้าแชร์เอง
+          }
+        }
+        root.querySelector('[data-copy]').click(); // แชร์ไม่ได้: คัดลอกแทน
+      });
+
+      host.addEventListener('click', (e) => {
+        if (!e.target.closest('[data-save-tpl]')) return;
+        flushNotes();
+        const ev = store.find('events', eventId);
+        if (!ev.agenda.length) {
+          toast('เพิ่มวาระก่อน แล้วค่อยบันทึกเป็นแม่แบบ', { icon: 'ℹ️' });
+          return;
+        }
+        saveTemplateFromEvent(ev);
+        toast(`บันทึกแม่แบบ “${ev.title}” แล้ว ใช้ได้ตอนนัดประชุมครั้งหน้า`, { icon: '💾', duration: 4500 });
+      });
+
       root.querySelector('[data-copy]').addEventListener('click', async (e) => {
         flushNotes();
         const text = meetingSummary(store.find('events', eventId), dateKey);
@@ -221,24 +257,33 @@ export function openMeeting(eventId, dateKey) {
   });
 }
 
-/** Plain-text minutes for sharing in chat / email. */
+/** ถือเป็น "สรุป" เมื่อประชุมจบแล้ว หรือมีบันทึก / ติ๊กวาระแล้ว */
+function isSummary(occ) {
+  const min = minutesOf(occ, occ.occurrence);
+  return meetingStatus(occ) === 'past' || !!min.notes?.trim() || min.agendaDone?.length > 0;
+}
+
+/** ข้อความสำหรับแชร์ใน LINE / อีเมล: ก่อนประชุม = นัดประชุม, หลังประชุม = สรุปการประชุม */
 export function meetingSummary(ev, key) {
   const min = minutesOf(ev, key);
   const items = actionItems(ev.id, key);
+  const summary = isSummary({ ...ev, occurrence: key });
   const lines = [
-    `📌 สรุปการประชุม: ${ev.title}`,
-    `🗓️ ${formatDate(key, { weekday: true })} เวลา ${ev.start}–${ev.end}`,
+    `${summary ? '📌 สรุปการประชุม' : '📣 นัดประชุม'}: ${ev.title}`,
+    `🗓️ ${formatDate(key, { weekday: true })}`,
+    `⏰ ${ev.start}–${ev.end} น.`,
   ];
   if (ev.location) lines.push(`📍 ${ev.location}`);
-  if (ev.attendees.length) lines.push(`👥 ผู้เข้าร่วม: ${ev.attendees.join(', ')}`);
+  if (ev.link) lines.push(`🔗 ${ev.link}`);
+  if (ev.attendees.length) lines.push(`👥 ${ev.attendees.join(', ')}`);
   if (ev.agenda.length) {
-    lines.push('', 'วาระการประชุม');
-    ev.agenda.forEach((a, i) => lines.push(`${min.agendaDone.includes(i) ? '✅' : '⬜'} ${a}`));
+    lines.push('', '📝 วาระการประชุม');
+    ev.agenda.forEach((a, i) => lines.push(summary ? `${min.agendaDone.includes(i) ? '✅' : '⬜'} ${a}` : `${i + 1}. ${a}`));
   }
-  if (min.notes.trim()) lines.push('', 'บันทึก', min.notes.trim());
+  if (summary && min.notes.trim()) lines.push('', '🗒️ บันทึก', min.notes.trim());
   if (items.length) {
-    lines.push('', 'สิ่งที่ต้องทำต่อ');
-    items.forEach((t) => lines.push(`${t.done ? '✅' : '•'} ${t.title}${t.due ? ` (ภายใน ${formatDate(t.due, { short: true, year: false })})` : ''}`));
+    lines.push('', '✅ สิ่งที่ต้องทำต่อ');
+    items.forEach((t) => lines.push(`${t.done ? '☑️' : '▫️'} ${t.title}${t.due ? ` (ภายใน ${formatDate(t.due, { short: true, year: false })})` : ''}`));
   }
   return lines.join('\n');
 }

@@ -5,7 +5,7 @@ import { uid, todayKey, toKey, addDays } from './utils.js';
 
 const KEY = 'planner.v1';
 const VERSION = 2;
-const COLLECTIONS = ['tasks', 'events', 'goals'];
+const COLLECTIONS = ['tasks', 'events', 'goals', 'templates'];
 
 const defaultGcal = () => ({
   enabled: false, // เชื่อมต่อ Google Calendar อยู่หรือไม่
@@ -46,10 +46,11 @@ function normalize(data) {
     tasks: Array.isArray(data.tasks) ? data.tasks : [],
     events: Array.isArray(data.events) ? data.events : [],
     goals: Array.isArray(data.goals) ? data.goals : [],
+    templates: Array.isArray(data.templates) ? data.templates : [],
     days: data.days && typeof data.days === 'object' ? data.days : {},
     settings: { ...defaultSettings(), ...(data.settings || {}) },
     // การลบที่ต้องซิงก์ไปเครื่องอื่น: { tasks: { id: เวลาที่ลบ }, ... }
-    deleted: { tasks: {}, events: {}, goals: {}, days: {}, ...(data.deleted || {}) },
+    deleted: { tasks: {}, events: {}, goals: {}, templates: {}, days: {}, ...(data.deleted || {}) },
     settingsUpdatedAt: data.settingsUpdatedAt || 0,
     demoClearedAt: data.demoClearedAt || 0,
   };

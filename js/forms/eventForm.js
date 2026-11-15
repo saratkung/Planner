@@ -10,6 +10,7 @@ import { icon } from '../ui/icons.js';
 import { removeWithUndo } from '../core/actions.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
 import { gcalStatus } from '../sync/gcal.js';
+import { allTemplates, deleteTemplate } from '../core/templates.js';
 
 export function openEventForm(ev = null, defaults = {}) {
   const isEdit = !!ev;
@@ -40,6 +41,10 @@ export function openEventForm(ev = null, defaults = {}) {
         isMeeting ? 'meeting' : 'event',
         { name: 'kind', block: true },
       )}
+      ${isEdit ? '' : `<div class="tpl-row" id="ef-tpl" ${isMeeting ? '' : 'hidden'}>
+        <span class="field-label">เริ่มจากแม่แบบ</span>
+        <div class="tpl-chips" id="ef-tpl-chips">${tplChips()}</div>
+      </div>`}
       <div class="field">
         <label for="ef-title" id="ef-title-label">${isMeeting ? 'หัวข้อการประชุม' : 'ชื่อนัดหมาย / กิจกรรม'}</label>
         <input class="input" id="ef-title" name="title" placeholder="${isMeeting ? 'เช่น ประชุมสรุปงานประจำเดือน' : 'เช่น ไปหาหมอฟัน'}" value="${esc(e0.title)}" autofocus maxlength="140" />
@@ -134,9 +139,42 @@ export function openEventForm(ev = null, defaults = {}) {
       if (e0.allDay) dur.hidden = true;
       bindSegmented($('[data-seg="kind"]', root), (v) => {
         isMeeting = v === 'meeting';
+        const tplRow = $('#ef-tpl', root);
+        if (tplRow) tplRow.hidden = !isMeeting;
         $('#ef-meeting', root).classList.toggle('open', isMeeting);
         titleLabel.textContent = isMeeting ? 'หัวข้อการประชุม' : 'ชื่อนัดหมาย / กิจกรรม';
         $('#ef-title', root).placeholder = isMeeting ? 'เช่น ประชุมสรุปงานประจำเดือน' : 'เช่น ไปหาหมอฟัน';
+      });
+
+      // ---- แม่แบบการประชุม ----
+      let lastTplTitle = '';
+      $('#ef-tpl', root)?.addEventListener('click', (e) => {
+        const del = e.target.closest('[data-tpl-del]');
+        if (del) {
+          e.stopPropagation();
+          const snap = deleteTemplate(del.dataset.tplDel);
+          $('#ef-tpl-chips', root).innerHTML = tplChips();
+          toast('ลบแม่แบบแล้ว', { icon: '🗑️', action: 'เลิกทำ', onAction: () => store.restore(snap) });
+          return;
+        }
+        const b = e.target.closest('[data-tpl]');
+        if (!b) return;
+        const t = allTemplates().find((x) => x.id === b.dataset.tpl);
+        if (!t) return;
+        const titleEl = $('#ef-title', root);
+        if (!titleEl.value.trim() || titleEl.value === lastTplTitle) titleEl.value = t.title;
+        lastTplTitle = t.title;
+        $('#ef-agenda', root).value = (t.agenda || []).join('\n');
+        if (t.location) $('#ef-location', root).value = t.location;
+        if (t.link) $('#ef-link', root).value = t.link;
+        if (t.attendees?.length) $('#ef-attendees', root).value = t.attendees.join(', ');
+        if (t.repeat && $('#ef-repeat', root) && !$('#ef-repeat', root).disabled) $('#ef-repeat', root).value = t.repeat;
+        endEl.value = minToTime(timeToMin(startEl.value) + (t.minutes || 60));
+        lastStart = timeToMin(startEl.value);
+        updateDur();
+        root.querySelectorAll('[data-tpl]').forEach((x) => x.classList.toggle('active', x === b));
+        $('#ef-meeting', root).classList.add('flash');
+        setTimeout(() => $('#ef-meeting', root).classList.remove('flash'), 700);
       });
 
       const updateDur = () => {
@@ -226,4 +264,13 @@ function normalizeLink(v) {
   const s = String(v || '').trim();
   if (!s) return '';
   return /^https?:\/\//i.test(s) ? s : 'https://' + s;
+}
+
+function tplChips() {
+  return allTemplates()
+    .map(
+      (t) => `<button type="button" class="chip tpl-chip" data-tpl="${t.id}" title="${esc((t.agenda || []).join(' · '))}">
+        <span>${t.emoji || '⭐'}</span>${esc(t.name)}${t.builtin ? '' : `<span class="tpl-del" data-tpl-del="${t.id}" role="button" aria-label="ลบแม่แบบ ${esc(t.name)}">×</span>`}</button>`,
+    )
+    .join('');
 }

@@ -1401,3 +1401,30 @@
   .modal-overlay.srch-overlay { place-items: start center; padding-top: 9vh; }
   .srch-overlay .modal { max-height: calc(100dvh - 18vh); }
 }
+
+/* ================= templates & share ================= */
+.tpl-row { display: flex; flex-direction: column; gap: 6px; animation: fadeUp 0.35s var(--ease) both; }
+.tpl-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; }
+.tpl-chips::-webkit-scrollbar { display: none; }
+.tpl-chip { flex-shrink: 0; gap: 6px; }
+.tpl-chip.active { background: var(--gold-soft); border-color: color-mix(in srgb, var(--gold) 55%, transparent); color: var(--text); animation: popIn 0.35s var(--spring); }
+.tpl-del {
+  margin-left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.tpl-del:hover { background: var(--bad-soft); color: var(--bad); }
+.meeting-fields.flash > div { animation: tplFlash 0.7s ease; border-radius: 12px; }
+@keyframes tplFlash { 0% { background: color-mix(in srgb, var(--gold) 18%, transparent); } 100% { background: transparent; } }
+.mr-tpl { margin-left: auto; font-size: 12px; text-transform: none; letter-spacing: 0; text-decoration: none; }
+.mr-copy-btn { width: 36px; height: 36px; border-radius: 10px; }
+.mr-share { background: var(--grad); color: #fff; border-color: transparent; }
+.mr-share:hover { filter: brightness(1.08); }
+@media (max-width: 760px) {
+  .mr-copy-btn { flex-shrink: 0; }
+}
