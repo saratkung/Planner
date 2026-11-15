@@ -41,7 +41,7 @@ const NW_RE = Object.keys(NUM_WORDS).sort((a, b) => b.length - a.length).join('|
 const num = (s) => (s == null ? null : /^\d+$/.test(s) ? Number(s) : NUM_WORDS[s] ?? null);
 
 const MEETING_RE = /ประชุม|หารือ|สัมมนา|ชี้แจง|บรีฟ|brief|meeting|conference|zoom|meet\.google|teams\.|webex|นัดคุย|คุยงาน|วางแผน|ประสานงาน|อบรม/i;
-const TASK_RE = /ส่ง(?!ผล)|จัดทำ|รายงาน|ภายใน(?:วัน)?|ก่อนวัน|กำหนดส่ง|deadline|due|ฝาก|เตรียม(?:เอกสาร|ข้อมูล)|ทำ(?:เอกสาร|สรุป)|อย่าลืม|เตือน|ตรวจสอบ|ติดตาม|ดำเนินการ|todo|to-do/i;
+const TASK_RE = /ส่ง(?!ผล)|สรุปยอด|ปิดยอด|ชำระ|จ่ายค่า|ต่ออายุ|จัดทำ|รายงาน|ภายใน(?:วัน)?|ก่อนวัน|กำหนดส่ง|deadline|due|ฝาก|เตรียม(?:เอกสาร|ข้อมูล)|ทำ(?:เอกสาร|สรุป)|อย่าลืม|เตือน|ตรวจสอบ|ติดตาม|ดำเนินการ|todo|to-do/i;
 const URGENT_RE = /ด่วนที่สุด|ด่วนมาก|ด่วน|urgent|asap/i;
 const LINK_RE = /https?:\/\/[^\s<>"'”）)]+/gi;
 
@@ -139,6 +139,7 @@ function findDates(s, now) {
 // ---------------- times ----------------
 function findTimes(s) {
   const out = [];
+  const morningCtx = /เช้า/.test(s) && !/เย็น|บ่าย|ค่ำ|ทุ่ม/.test(s);
   const add = (m, h, min, label) => {
     if (h == null || h > 23 || min > 59) return;
     out.push({ index: m.index, end: m.index + m[0].length, mins: h * 60 + (min || 0), label: label || m[0].trim() });
@@ -168,7 +169,7 @@ function findTimes(s) {
     let h = num(m[1]);
     if (h == null) continue;
     if (m[2] === 'เย็น' && h < 12) h += 12;
-    else if (m[2] !== 'เช้า' && h >= 1 && h <= 6) h += 12; // "4 โมง" = 16:00
+    else if (m[2] !== 'เช้า' && h >= 1 && h <= 6 && !morningCtx) h += 12; // "4 โมง" = 16:00 (เว้นแต่ข้อความบอกว่าเช้า)
     add(m, h, m[3] ? 30 : 0);
   }
   const toom = new RegExp(`(\\d|${NW_RE})\\s*ทุ่ม\\s*(ครึ่ง)?`, 'g');
@@ -262,11 +263,12 @@ const POLITE_END_RE = /\s*(?:นะ)?(?:ครับผม|ครับ|ค่�
 const LEAD_RE = /^(?:ขอเชิญ(?:เข้าร่วม)?|เรียนเชิญ|ขอเรียนเชิญ|เชิญ(?:เข้าร่วม)?|ขอแจ้ง|แจ้ง(?:ว่า)?|ขอนัด|นัด(?!คุย)|ขอ)\s*/;
 
 // คำที่ค้างท้ายชื่อ: คำยาวตัดได้แม้ติดกับคำก่อน, คำสั้น (ใน ที่ ณ ...) ตัดเฉพาะเมื่อเว้นวรรค
-const DANGLING_END = /(?:\s*(?:ในวันที่|ในวัน|วันที่|เวลา|ภายใน|ด่วนที่สุด|ด่วนมาก|ด่วน)|\s+(?:ใน|วัน|ที่|ณ|ก่อน|โดย|และ|กับ|ช่วง))\s*$/;
+const DANGLING_END = /(?:\s*(?:ในวันที่|ในวัน|วันที่|เวลา|ภายใน|ด่วนที่สุด|ด่วนมาก|ด่วน|ทุก\s*ๆ?)|\s+(?:ใน|วัน|ที่|ณ|ก่อน|โดย|และ|กับ|ช่วง))\s*$/;
 const NOISE = /\s*(?:zoom|teams|google meet|meet|ลิงก์|link)\b\s*/gi;
 
 function cleanTitle(t) {
   let s = t
+    .replace(/\s*ทุก\s*(?:ๆ\s*)?(?:วันทำงาน|วันธรรมดา|สัปดาห์|อาทิตย์|เดือน|เช้า|เย็น|วัน(?!ที่))\s*/g, ' ')
     .replace(/^(?:ฝาก|รบกวน|ช่วย|please)\s*/i, '')
     .replace(LEAD_RE, '')
     .replace(/(?:นะ)?(?:ครับผม|ครับ|ค่ะ|คะ|จ้า|จ้ะ)(?=\s|$)/g, ' ')
@@ -345,6 +347,16 @@ function segments(text, now) {
   return [text];
 }
 
+/** การทำซ้ำ: ทุกวัน / ทุกวันทำงาน / ทุกวันศุกร์ / ทุกสัปดาห์ / ทุกเดือน */
+function findRepeat(s) {
+  if (/(?:ทุก\s*)?(?:วัน)?จันทร์\s*(?:-|–|ถึง)\s*(?:วัน)?ศุกร์|ทุกวันทำงาน|ทุกวันธรรมดา|every weekday|weekdays/i.test(s) && /ทุก|every|weekdays/i.test(s)) return 'weekdays';
+  if (new RegExp(`ทุก\\s*(?:ๆ\\s*)?(?:วัน)?(?:${WD_RE})`).test(s) || /every\s+(?:mon|tue|wed|thu|fri|sat|sun)/i.test(s)) return 'weekly';
+  if (/ทุก\s*(?:ๆ\s*)?(?:สัปดาห์|อาทิตย์)|weekly|every week/i.test(s)) return 'weekly';
+  if (/ทุก\s*(?:ๆ\s*)?เดือน|ทุกวันที่\s*\d|monthly|every month/i.test(s)) return 'monthly';
+  if (/ทุก\s*(?:ๆ\s*)?วัน(?!ที่)|ทุกเช้า|ทุกเย็น|daily|every day/i.test(s)) return 'daily';
+  return 'none';
+}
+
 function classify(seg, { hasTime, hasDate, link, attendees }) {
   if (MEETING_RE.test(seg) || link || attendees.length) return 'meeting';
   if (TASK_RE.test(seg) && !hasTime) return 'task';
@@ -380,6 +392,8 @@ function parseSegment(seg, now, whole) {
   const hasDate = !!main;
   const hasTime = !!start;
   let type = classify(seg, { hasTime, hasDate, link, attendees });
+  // สิ่งที่ทำซ้ำแต่ไม่มีเวลา (เช่น ส่งรายงานทุกวันศุกร์) = งาน
+  if (type === 'event' && !hasTime && findRepeat(seg) !== 'none') type = 'task';
   if (type === 'task' && main && deadlineIdx(main) === false && hasTime) type = 'event';
 
   const date = main?.date || toKey(now);
@@ -411,6 +425,7 @@ function parseSegment(seg, now, whole) {
     attendees,
     agenda,
     priority: URGENT_RE.test(seg) ? 'high' : 'medium',
+    repeat: findRepeat(seg),
     notes: (seg === whole ? seg : seg).slice(0, 2000),
     found: {
       date: main?.label || '',

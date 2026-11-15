@@ -3,7 +3,7 @@
 // ==========================================================
 import { store } from '../core/store.js';
 import { esc, todayKey, toKey, addDays, diffDays, relativeDay, enterTracker, $ } from '../core/utils.js';
-import { CATEGORIES, category, priority } from '../core/constants.js';
+import { CATEGORIES, category, priority, REPEATS } from '../core/constants.js';
 import { isOverdue, sortTasks } from '../core/selectors.js';
 import { toggleTask, removeWithUndo } from '../core/actions.js';
 import { icon } from '../ui/icons.js';
@@ -265,6 +265,7 @@ function taskRow(t, track) {
           ${goal ? `<span class="tag" style="color:${goal.color}">${icon('target')}${esc(goal.title)}</span>` : ''}
           ${meeting ? `<span class="tag">${icon('users')}จากประชุม ${esc(meeting.title)}</span>` : ''}
           ${!t.done && isFocus(t.id) ? '<span class="tag gold">⭐ สำคัญวันนี้</span>' : ''}
+          ${t.repeat && t.repeat !== 'none' ? `<span class="tag accent">${icon('repeat')}${REPEATS.find((r) => r.id === t.repeat)?.label || ''}</span>` : ''}
           ${t.notes ? `<span class="tag" title="${esc(t.notes)}">${icon('note')}</span>` : ''}
         </div>
       </div>

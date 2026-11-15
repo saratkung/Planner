@@ -201,3 +201,70 @@ export function focusTasks(key) {
   const ids = store.day(key).focus || [];
   return ids.map((id) => store.find('tasks', id)).filter(Boolean);
 }
+
+// ---------------- weekly summary ----------------
+
+/** วันในสัปดาห์ (offset 0 = สัปดาห์นี้, -1 = สัปดาห์ก่อน) */
+export function weekDays(offset = 0) {
+  const ws = store.state.settings.weekStart || 0;
+  const today = new Date();
+  const diff = (today.getDay() - ws + 7) % 7;
+  const start = addDays(today, -diff + offset * 7);
+  return Array.from({ length: 7 }, (_, i) => toKey(addDays(start, i)));
+}
+
+/** สถิติของสัปดาห์ */
+export function weekStats(offset = 0) {
+  const days = weekDays(offset);
+  const first = days[0];
+  const last = days[6];
+  const today = todayKey();
+  const inWeek = (k) => k >= first && k <= last;
+  const doneKey = (t) => (t.doneAt ? toKey(new Date(t.doneAt)) : null);
+
+  const done = store.state.tasks.filter((t) => t.done && inWeek(doneKey(t))).sort((a, b) => b.doneAt - a.doneAt);
+  const prevDays = weekDays(offset - 1);
+  const prevDone = store.state.tasks.filter((t) => t.done && doneKey(t) >= prevDays[0] && doneKey(t) <= prevDays[6]).length;
+  const cutoff = last < today ? last : today;
+  const open = sortTasks(store.state.tasks.filter((t) => !t.done && t.due && t.due <= cutoff));
+  const upcoming = store.state.tasks.filter((t) => !t.done && t.due && t.due > cutoff && t.due <= last).length;
+
+  const perDay = days.map((k) => {
+    const evs = eventsOn(k).filter((e) => !e.allDay);
+    const meetings = evs.filter((e) => e.isMeeting);
+    const mins = (list) => list.reduce((a, e) => a + Math.max(0, timeToMin(e.end) - timeToMin(e.start)), 0);
+    return {
+      key: k,
+      done: done.filter((t) => doneKey(t) === k).length,
+      meetings: meetings.length,
+      meetingMins: mins(meetings),
+      eventMins: mins(evs),
+      mood: store.day(k).mood || null,
+      focus: (store.day(k).focus || []).length,
+      focusDone: focusTasks(k).filter((t) => t.done).length,
+      evs,
+    };
+  });
+
+  const meetingOcc = perDay.flatMap((d) => d.evs.filter((e) => e.isMeeting).map((e) => ({ ...e, occurrence: d.key })));
+  const pastMeetings = meetingOcc.filter((m) => meetingStatus(m) === 'past');
+  const withNotes = pastMeetings.filter((m) => minutesOf(m, m.occurrence).notes?.trim()).length;
+
+  const byCategory = {};
+  perDay.forEach((d) => d.evs.forEach((e) => (byCategory[e.category] = (byCategory[e.category] || 0) + Math.max(0, timeToMin(e.end) - timeToMin(e.start)))));
+
+  const milestones = [];
+  store.state.goals.forEach((g) =>
+    (g.milestones || []).forEach((m) => {
+      if (m.done && m.doneAt && inWeek(toKey(new Date(m.doneAt)))) milestones.push({ goal: g, m });
+    }),
+  );
+  const goals = store.state.goals.map((g) => ({ g, p: goalProgress(g) }));
+
+  return {
+    days, first, last, isCurrent: offset === 0, done, prevDone, open, upcoming, perDay,
+    meetings: meetingOcc.length, meetingMins: perDay.reduce((a, d) => a + d.meetingMins, 0),
+    pastMeetings: pastMeetings.length, withNotes, byCategory, milestones, goals,
+    focusTotal: perDay.reduce((a, d) => a + d.focus, 0), focusDone: perDay.reduce((a, d) => a + d.focusDone, 0),
+  };
+}

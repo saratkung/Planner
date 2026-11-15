@@ -20,6 +20,7 @@ import { openMeeting, linkLabel } from '../forms/meetingRoom.js';
 import { toast } from '../ui/toast.js';
 import { dayMoment, openPlanDay, openReviewDay, toggleFocus, isFocus, star, MAX_FOCUS } from './dayplan.js';
 import { focusTasks } from '../core/selectors.js';
+import { openWeekly, weeklyCardHTML } from './weekly.js';
 
 function quoteOfDay() {
   const d = new Date();
@@ -167,8 +168,11 @@ export default {
 
             <div class="card">
               <div class="card-head">
-                <h3>${icon('chart')}งานที่ทำเสร็จ 7 วันล่าสุด</h3>
+                <h3>${icon('chart')}สัปดาห์นี้</h3>
+                <button class="btn btn-outline btn-sm" data-act="weekly">📊 สรุปสัปดาห์</button>
               </div>
+              ${weeklyCardHTML()}
+              <p class="wk-chart-label muted">งานที่ทำเสร็จ 7 วันล่าสุด</p>
               ${renderChart(completionHistory(7), first)}
             </div>
           </section>
@@ -206,6 +210,7 @@ export default {
         return;
       }
       const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'weekly') return openWeekly();
       if (act === 'plan') return openPlanDay();
       if (act === 'review') return openReviewDay();
       if (act === 'task') return openTaskForm();

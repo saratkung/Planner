@@ -6,6 +6,7 @@ import { store } from '../core/store.js';
 import { esc, formatDate, timeToMin, todayKey, $, $$ } from '../core/utils.js';
 import { parseText } from '../core/parse.js';
 import { eventsOn } from '../core/selectors.js';
+import { REPEATS } from '../core/constants.js';
 import { openModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
@@ -86,6 +87,7 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
           it.found.time && `⏰ ${esc(it.found.time)}`,
           it.found.location && `📍 ${esc(it.found.location)}`,
           it.found.link && '🔗 ลิงก์ประชุม',
+          it.repeat && it.repeat !== 'none' && `🔁 ${REPEATS.find((r) => r.id === it.repeat)?.label}`,
           it.attendees.length && `👥 ${it.attendees.length} คน`,
           it.agenda.length && `📝 ${it.agenda.length} วาระ`,
         ].filter(Boolean);
@@ -107,6 +109,8 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
               <label class="sp-field"><span>${isTask ? 'เวลา (ถ้ามี)' : 'เริ่ม'}</span>
                 <input class="input" type="time" data-f="start" value="${it.start}" /></label>
               ${isTask ? '' : `<label class="sp-field"><span>ถึง</span><input class="input" type="time" data-f="end" value="${it.end}" /></label>`}
+              <label class="sp-field"><span>ทำซ้ำ</span>
+                <select class="select" data-f="repeat">${REPEATS.map((r) => `<option value="${r.id}" ${r.id === (it.repeat || 'none') ? 'selected' : ''}>${r.label}</option>`).join('')}</select></label>
             </div>
             ${isTask ? '' : `
             <div class="sp-row">
@@ -223,11 +227,12 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
             store.add('tasks', {
               title: it.title.trim(), due: it.date || null, time: it.start || '', notes: it.notes,
               priority: it.priority, category: 'work', goalId: null, meetingId: null, done: false, doneAt: null,
+              repeat: it.repeat || 'none',
             });
           } else {
             store.add('events', {
               title: it.title.trim(), date: it.date || todayKey(), start: it.start || '09:00', end: it.end || '10:00',
-              color: COLOR[it.type], category: 'work', repeat: 'none', notes: it.notes,
+              color: COLOR[it.type], category: 'work', repeat: it.repeat || 'none', notes: it.notes,
               isMeeting: it.type === 'meeting', location: it.location || '', link: it.link || '',
               attendees: it.type === 'meeting' ? it.attendees : [], agenda: it.type === 'meeting' ? it.agenda : [],
               minutes: {},

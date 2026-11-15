@@ -3,7 +3,7 @@
 // ==========================================================
 import { store } from '../core/store.js';
 import { esc, todayKey, $ } from '../core/utils.js';
-import { CATEGORIES, PRIORITIES } from '../core/constants.js';
+import { CATEGORIES, PRIORITIES, REPEATS } from '../core/constants.js';
 import { openModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
@@ -34,6 +34,12 @@ export function openTaskForm(task = null, defaults = {}) {
           <label for="tf-time">เวลา (ไม่บังคับ)</label>
           <input class="input" type="time" id="tf-time" name="time" value="${t.time || ''}" />
         </div>
+      </div>
+      <div class="field">
+        <label for="tf-repeat">ทำซ้ำ</label>
+        <select class="select" id="tf-repeat" name="repeat">
+          ${REPEATS.map((r) => `<option value="${r.id}" ${r.id === (t.repeat || 'none') ? 'selected' : ''}>${r.id === 'none' ? 'ไม่ทำซ้ำ' : '🔁 ' + r.label}</option>`).join('')}
+        </select>
       </div>
       <div class="field">
         <span class="field-label">ความสำคัญ</span>
@@ -89,10 +95,15 @@ export function openTaskForm(task = null, defaults = {}) {
           titleEl.focus();
           return;
         }
+        if ((fd.get('repeat') || 'none') !== 'none' && !fd.get('due')) {
+          const dueEl = $('#tf-due', root);
+          dueEl.value = todayKey();
+        }
         const data = {
           title,
-          due: fd.get('due') || null,
+          due: $('#tf-due', root).value || null,
           time: fd.get('time') || '',
+          repeat: fd.get('repeat') || 'none',
           priority: prio,
           category: fd.get('category'),
           goalId: fd.get('goalId') || null,

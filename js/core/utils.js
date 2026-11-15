@@ -187,3 +187,27 @@ export function ripple(e, host) {
   host.appendChild(s);
   setTimeout(() => s.remove(), 650);
 }
+
+/** วันครบกำหนดครั้งถัดไปของงานที่ทำซ้ำ (เลื่อนจนถึงวันนี้หรือหลังจากนั้น) */
+export function nextRepeatDate(key, repeat, today = todayKey()) {
+  const step = (k) => {
+    const d = fromKey(k);
+    if (repeat === 'daily') return toKey(addDays(d, 1));
+    if (repeat === 'weekly') return toKey(addDays(d, 7));
+    if (repeat === 'weekdays') {
+      let n = addDays(d, 1);
+      while (n.getDay() === 0 || n.getDay() === 6) n = addDays(n, 1);
+      return toKey(n);
+    }
+    if (repeat === 'monthly') {
+      const day = Number(k.slice(8, 10));
+      const first = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+      return toKey(new Date(first.getFullYear(), first.getMonth(), Math.min(day, last)));
+    }
+    return null;
+  };
+  let next = step(key || today);
+  for (let i = 0; next && next <= today && i < 400; i++) next = step(next);
+  return next;
+}

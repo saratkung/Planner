@@ -3,7 +3,7 @@
 // (toggle with animation + confetti, delete with undo)
 // ==========================================================
 import { store } from './store.js';
-import { animateOut } from './utils.js';
+import { animateOut, nextRepeatDate, todayKey, formatDate } from './utils.js';
 import { goalProgress } from './selectors.js';
 import { toast } from '../ui/toast.js';
 import { confetti, celebrate } from '../ui/confetti.js';
@@ -50,7 +50,25 @@ export function toggleTask(id, checkEl) {
   setTimeout(() => {
     store.toggleTask(id);
     if (willBeDone) checkGoalCompleted(t.goalId, before);
+    if (t.repeat && t.repeat !== 'none') repeatTask(t, willBeDone);
   }, checkEl ? 380 : 0);
+}
+
+/** งานทำซ้ำ: ทำเสร็จ -> สร้างครั้งถัดไป / ยกเลิกเสร็จ -> ลบครั้งถัดไปที่เพิ่งสร้าง (ถ้ายังไม่ได้ทำ) */
+function repeatTask(t, done) {
+  if (done) {
+    if (t.nextId && store.find('tasks', t.nextId)) return;
+    const due = nextRepeatDate(t.due || todayKey(), t.repeat);
+    if (!due) return;
+    const { id, createdAt, updatedAt, done: _d, doneAt, nextId, seed, ...rest } = t;
+    const next = store.add('tasks', { ...rest, due, done: false, doneAt: null, nextId: null, seriesId: t.seriesId || t.id });
+    store.update('tasks', t.id, { nextId: next.id });
+    toast(`🔁 ครั้งถัดไป: ${formatDate(due, { weekday: true, short: true, year: false })}`, { icon: '✅', duration: 3500 });
+  } else if (t.nextId) {
+    const n = store.find('tasks', t.nextId);
+    if (n && !n.done) store.remove('tasks', n.id);
+    store.update('tasks', t.id, { nextId: null });
+  }
 }
 
 export function toggleMilestone(goalId, msId, checkEl) {

@@ -12,6 +12,7 @@ import { icon } from '../ui/icons.js';
 import { checkbox } from '../ui/widgets.js';
 import { celebrate, confetti } from '../ui/confetti.js';
 import { openMeeting } from '../forms/meetingRoom.js';
+import { openWeekly } from './weekly.js';
 
 export const MAX_FOCUS = 3;
 const MOODS = [
@@ -242,6 +243,7 @@ export function openReviewDay() {
     body: `
       <div class="pd">
         <p class="pd-date">${formatDate(key, { weekday: true })}</p>
+        ${[5, 6, 0].includes(new Date().getDay()) ? `<button type="button" class="btn btn-outline btn-sm rv-week" data-week>📊 ดูสรุปสัปดาห์นี้</button>` : ''}
         <section class="rv-hero pd-sec" style="--i:0">
           <div class="rv-big"><b>${done.length}</b><span>งานเสร็จ</span></div>
           <div class="rv-big"><b>${focusDone}/${focus.length || 0}</b><span>งานสำคัญ</span></div>
@@ -301,6 +303,10 @@ export function openReviewDay() {
         });
       });
       root.addEventListener('click', (e) => {
+        if (e.target.closest('[data-week]')) {
+          close();
+          return setTimeout(() => openWeekly(), 250);
+        }
         const n = e.target.closest('[data-note]');
         if (n) {
           close();
