@@ -2,7 +2,7 @@
 // sw.js — service worker: ทำให้แอปเปิดได้แม้ไม่มีอินเทอร์เน็ต
 // เปลี่ยน VERSION ทุกครั้งที่แก้ไฟล์ เพื่อให้มือถือโหลดเวอร์ชันใหม่
 // ==========================================================
-const VERSION = 'planner-v22';
+const VERSION = 'planner-v23';
 const APP_SHELL = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const APP_SHELL = [
   './js/core/utils.js',
   './js/core/parse.js',
   './js/core/templates.js',
+  './js/core/learn.js',
   './js/ui/confetti.js',
   './js/ui/icons.js',
   './js/ui/modal.js',
@@ -40,6 +41,7 @@ const APP_SHELL = [
   './js/forms/meetingRoom.js',
   './js/forms/smartPaste.js',
   './js/forms/taskForm.js',
+  './js/forms/learnReport.js',
   './js/features/calendar.js',
   './js/features/dashboard.js',
   './js/features/goals.js',
@@ -50,6 +52,7 @@ const APP_SHELL = [
   './js/features/schedule.js',
   './js/features/settings.js',
   './js/features/tasks.js',
+  './js/features/learn.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',

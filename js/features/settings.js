@@ -107,6 +107,7 @@ function notifySectionHTML() {
     ${sw('events', 'ประชุมและนัดหมาย')}
     ${sw('tasks', 'งานที่ตั้งเวลาไว้')}
     ${sw('morning', 'ชวนวางแผนวันนี้ ตอนเริ่มงาน')}
+    ${sw('learn', 'ชวนบันทึก “วันนี้เรียนรู้อะไร” ตอน 2 ทุ่ม')}
     ${sw('gcal', 'ตั้งการแจ้งเตือนใน Google Calendar ด้วย (นัดที่สร้างใน Planner)')}
     <div class="chips">
       <button class="btn btn-outline btn-sm" type="button" data-nt="test">ทดสอบการแจ้งเตือน</button>

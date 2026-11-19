@@ -28,8 +28,9 @@ import calendar from './features/calendar.js';
 import schedule from './features/schedule.js';
 import goals from './features/goals.js';
 import meetings from './features/meetings.js';
+import learn from './features/learn.js';
 
-const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals];
+const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals, learn];
 let viewEl = $('#view');
 let active = null; // { feature, instance }
 
@@ -47,6 +48,7 @@ function buildNav() {
   $('#quick-menu').innerHTML = [
     ['paste', 'clipboard', 'วางข้อความ → แปลงอัตโนมัติ', '#d9a21b', 'V'],
     ['task', 'checkSquare', 'งานใหม่', '#6366f1', 'N'],
+    ['learn', 'bulb', 'วันนี้เรียนรู้อะไร', '#d9a21b', 'L'],
     ['focus', 'clock', 'จับเวลาโฟกัส 25 นาที', '#10b981', 'F'],
     ['meeting', 'users', 'นัดประชุม', '#0ea5e9', 'M'],
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
@@ -144,10 +146,17 @@ function setupQuickMenu() {
 function quickCreate(kind) {
   if (kind === 'paste') return openSmartPaste('', { navigate });
   if (kind === 'focus') return focusActive() ? toast('กำลังจับเวลาอยู่ แตะนาฬิกามุมล่างเพื่อดู', { icon: '⏱️' }) : startFocus();
+  if (kind === 'learn') return openLearn();
   if (kind === 'task') openTaskForm();
   if (kind === 'event') openEventForm();
   if (kind === 'meeting') openEventForm(null, { isMeeting: true });
   if (kind === 'goal') openGoalForm();
+}
+
+/** ไปหน้าเรียนรู้แล้วเริ่มพิมพ์ได้เลย */
+function openLearn() {
+  if (active?.feature.id !== 'learn') navigate('learn');
+  setTimeout(() => active?.instance?.focusInput?.(), active?.feature.id === 'learn' ? 0 : 380);
 }
 
 // ---------- theme ----------
@@ -188,6 +197,7 @@ function setupShortcuts() {
     else if (k === 'v') { e.preventDefault(); openSmartPaste('', { navigate }); }
     else if (k === 'f') { e.preventDefault(); quickCreate('focus'); }
     else if (k === 'g') { e.preventDefault(); openGoalForm(); }
+    else if (k === 'l') { e.preventDefault(); openLearn(); }
     else if (k === 't') toggleTheme();
     else if (/^[1-9]$/.test(k) && FEATURES[Number(k) - 1]) navigate(FEATURES[Number(k) - 1].id);
   });

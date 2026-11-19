@@ -9,14 +9,13 @@ const cfg = () => store.state.settings.ai || {};
 export const aiReady = () => !!(cfg().enabled && cfg().code);
 export const setAI = (patch) => store.setSettings({ ai: { ...cfg(), ...patch } });
 
-/** ส่งข้อความไปให้ AI อ่าน แล้วแปลงเป็นรูปแบบเดียวกับตัวอ่านในเครื่อง */
-export async function aiParse(text, { code = cfg().code } = {}) {
+async function callAI(payload, code) {
   let res;
   try {
     res = await fetch('/api/parse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-planner-code': code || '' },
-      body: JSON.stringify({ text, today: todayKey() }),
+      body: JSON.stringify({ today: todayKey(), ...payload }),
     });
   } catch (_) {
     throw new Error('ติดต่อ AI ไม่ได้ (ตรวจสอบอินเทอร์เน็ต)');
@@ -24,7 +23,19 @@ export async function aiParse(text, { code = cfg().code } = {}) {
   const j = await res.json().catch(() => ({}));
   if (res.status === 404) throw new Error('เว็บนี้ยังไม่มีบริการ AI (ใช้ได้บน plannercsd.vercel.app)');
   if (!res.ok) throw new Error(j.message || `AI ขัดข้อง (${res.status})`);
+  return j;
+}
+
+/** ส่งข้อความไปให้ AI อ่าน แล้วแปลงเป็นรูปแบบเดียวกับตัวอ่านในเครื่อง */
+export async function aiParse(text, { code = cfg().code } = {}) {
+  const j = await callAI({ text }, code);
   return (j.items || []).map((it) => toItem(it, text));
+}
+
+/** ให้ AI แยกบันทึกการเรียนรู้เป็นข้อ ๆ พร้อมหมวด → [{ text, cat }] */
+export async function aiLearn(text, { code = cfg().code } = {}) {
+  const j = await callAI({ text, mode: 'learn' }, code);
+  return (j.points || []).filter((p) => p.text?.trim()).map((p) => ({ text: p.text.trim(), cat: p.category, ai: true }));
 }
 
 function toItem(it, original) {

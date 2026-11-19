@@ -22,6 +22,21 @@ import { dayMoment, openPlanDay, openReviewDay, toggleFocus, isFocus, star, MAX_
 import { focusTasks } from '../core/selectors.js';
 import { openWeekly, weeklyCardHTML } from './weekly.js';
 import { startFocus } from '../ui/focus.js';
+import { processLearning, saveLearnings, learningsBetween, learnStreak, learnCat } from '../core/learn.js';
+import { openLearnReport } from '../forms/learnReport.js';
+
+/** แถบ "วันนี้เรียนรู้อะไร?" จดเร็ว ๆ จากหน้าแรก */
+function learnStrip() {
+  const n = learningsBetween(todayKey(), todayKey()).length;
+  const st = learnStreak();
+  return `<section class="card ln-strip">
+    <span class="ln-strip-ico" aria-hidden="true">💡</span>
+    <div class="ln-strip-text"><b>วันนี้เรียนรู้อะไร?</b>
+      <small>${n ? `จดแล้ว ${n} เรื่อง${st > 1 ? ` · 🔥 ต่อเนื่อง ${st} วัน` : ''}` : 'จดสั้น ๆ แล้วระบบจัดหมวดให้'}</small></div>
+    <form class="quick-input ln-quick" data-learn>${icon('plus')}<input class="input" placeholder="เช่น ฟังให้จบก่อนตัดสินใจ แล้วกด Enter" maxlength="500" aria-label="สิ่งที่ได้เรียนรู้วันนี้" enterkeyhint="done" /></form>
+    <button class="btn btn-line btn-sm" type="button" data-act="lreport">💬 รายงาน LINE</button>
+  </section>`;
+}
 
 function quoteOfDay() {
   const d = new Date();
@@ -119,6 +134,8 @@ export default {
             </div>
           </section>
 
+          ${learnStrip()}
+
           <section class="dash-grid">
             <div class="card">
               <div class="card-head">
@@ -214,6 +231,7 @@ export default {
       }
       const act = e.target.closest('[data-act]')?.dataset.act;
       if (act === 'weekly') return openWeekly();
+      if (act === 'lreport') return openLearnReport({ period: 'today' });
       if (act === 'plan') return openPlanDay();
       if (act === 'review') return openReviewDay();
       if (act === 'task') return openTaskForm();
@@ -224,6 +242,17 @@ export default {
     });
 
     root.addEventListener('submit', (e) => {
+      if (e.target.matches('[data-learn]')) {
+        e.preventDefault();
+        const input = e.target.querySelector('input');
+        const pts = processLearning(input.value);
+        if (!pts.length) return;
+        saveLearnings(pts);
+        const c = learnCat(pts[0].cat);
+        toast(pts.length > 1 ? `บันทึก ${pts.length} เรื่องแล้ว` : `บันทึกแล้ว · ${c.emoji} ${c.label}`, { icon: '💡', action: 'ดูทั้งหมด', onAction: () => navigate('learn') });
+        requestAnimationFrame(() => root.querySelector('[data-learn] input')?.focus());
+        return;
+      }
       if (!e.target.matches('[data-quick]')) return;
       e.preventDefault();
       const input = e.target.querySelector('input');

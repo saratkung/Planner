@@ -179,7 +179,7 @@
     height: var(--tabbar-h);
     z-index: 40;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     padding: 6px;
     border-radius: 22px;
     background: var(--surface-glass);

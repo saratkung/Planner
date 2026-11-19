@@ -74,6 +74,7 @@ function body(s) {
 
       ${s.focusTotal ? `<p class="wk-line">⭐ งานสำคัญที่ทำสำเร็จ <b>${s.focusDone}/${s.focusTotal}</b></p>` : ''}
       ${s.focusMins ? `<p class="wk-line">⏱️ เวลาโฟกัสรวม <b>${durationLabel(s.focusMins)}</b></p>` : ''}
+      ${s.learned ? `<p class="wk-line">💡 ได้เรียนรู้ใหม่ <b>${s.learned} เรื่อง</b></p>` : ''}
       ${moods.length ? `<div class="wk-moods">${s.perDay.map((d) => `<span title="${formatDate(d.key, { weekday: true, short: true, year: false })}"><i>${d.mood ? MOOD[d.mood] : '·'}</i><small>${THAI_DAYS_SHORT[fromKey(d.key).getDay()]}</small></span>`).join('')}</div>` : ''}
 
       ${Object.keys(s.byCategory).length ? `
@@ -114,6 +115,7 @@ export function weeklyText(s) {
   ];
   if (s.pastMeetings) lines.push(`📝 จดบันทึกประชุมแล้ว ${s.withNotes}/${s.pastMeetings}`);
   if (s.focusMins) lines.push(`⏱️ เวลาโฟกัสรวม ${durationLabel(s.focusMins)}`);
+  if (s.learned) lines.push(`💡 ได้เรียนรู้ใหม่ ${s.learned} เรื่อง`);
   if (s.done.length) {
     lines.push('', 'งานที่เสร็จ');
     s.done.slice(0, 15).forEach((t) => lines.push(`• ${t.title}`));

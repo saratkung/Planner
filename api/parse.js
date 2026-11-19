@@ -1,5 +1,6 @@
 // ==========================================================
 // api/parse.js — Vercel serverless function: ให้ Claude อ่านข้อความแล้วแยกเป็น ประชุม / นัดหมาย / งาน
+//   (mode: 'learn' = แยกบันทึกการเรียนรู้เป็นข้อ ๆ พร้อมหมวด)
 //
 // ตั้งค่าใน Vercel → Project → Settings → Environment Variables
 //   ANTHROPIC_API_KEY  คีย์จาก console.anthropic.com (อยู่บนเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่แอป)
@@ -26,6 +27,27 @@ const Item = z.object({
   notes: z.string(),
 });
 const Result = z.object({ items: z.array(Item) });
+
+// โหมด "วันนี้เรียนรู้อะไร": แยกเป็นข้อ ๆ แล้วจัดหมวด
+const LEARN_CATS = ['law', 'work', 'people', 'tech', 'health', 'finance', 'life', 'general'];
+const LearnResult = z.object({
+  points: z.array(z.object({ text: z.string(), category: z.enum(LEARN_CATS) })),
+});
+const LEARN_SYSTEM = `You help a Thai police officer (investigation bureau) keep a daily journal of what they learned today.
+
+Split the user's note into separate learning points, in the order they appear. Each point is one lesson, fact, skill or insight. Do not invent points that are not in the note, and drop chit-chat that teaches nothing.
+
+For each point:
+- text: one clear Thai sentence (at most about 120 characters) that keeps the original meaning, names, numbers and law sections. Write it as a note to self, without "วันนี้ได้เรียนรู้ว่า" in front. Keep the user's wording where it is already clear.
+- category, one of:
+  - "law": laws, regulations, legal procedure, court rulings, legal powers, orders
+  - "work": investigation, police operations, cases, evidence, office work, meetings and procedures at work
+  - "people": communication, leadership, teamwork, managing subordinates or bosses, family and friends
+  - "tech": technology, apps, computers, cyber crime techniques, data tools, practical skills, languages
+  - "health": exercise, sleep, food, stress, the body
+  - "finance": money, saving, investing, tax, debt
+  - "life": personal reflections, attitude, values, life lessons
+  - "general": general knowledge that fits nothing above (books, history, science)`;
 
 const SYSTEM = `You turn messages pasted by a Thai police officer (official meeting invitations, LINE chats, emails) into calendar items for a personal planner app.
 
@@ -57,6 +79,7 @@ export default async function handler(req, res) {
   if (text.length > MAX_CHARS) {
     return res.status(413).json({ error: 'too_long', message: `ข้อความยาวเกิน ${MAX_CHARS} ตัวอักษร ลองแบ่งวางทีละส่วน` });
   }
+  const mode = body.mode === 'learn' ? 'learn' : 'items';
   const today = /^\d{4}-\d{2}-\d{2}$/.test(body.today || '') ? body.today : new Date().toISOString().slice(0, 10);
   const weekday = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(`${today}T12:00:00Z`).getUTCDay()];
 
@@ -67,12 +90,15 @@ export default async function handler(req, res) {
       max_tokens: 16000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      output_config: { effort: 'low', format: betaZodOutputFormat(Result) },
-      system: SYSTEM,
+      output_config: { effort: 'low', format: betaZodOutputFormat(mode === 'learn' ? LearnResult : Result) },
+      system: mode === 'learn' ? LEARN_SYSTEM : SYSTEM,
       messages: [
         {
           role: 'user',
-          content: `Current date: ${today} (${weekday}), time zone Asia/Bangkok.\n\n<message>\n${text}\n</message>`,
+          content:
+            mode === 'learn'
+              ? `<note>\n${text}\n</note>`
+              : `Current date: ${today} (${weekday}), time zone Asia/Bangkok.\n\n<message>\n${text}\n</message>`,
         },
       ],
     });
@@ -82,6 +108,7 @@ export default async function handler(req, res) {
     if (response.stop_reason === 'max_tokens' || !response.parsed_output) {
       return res.status(502).json({ error: 'incomplete', message: 'AI ตอบไม่ครบ ลองแบ่งข้อความให้สั้นลง' });
     }
+    if (mode === 'learn') return res.status(200).json({ points: response.parsed_output.points, model: response.model });
     return res.status(200).json({ items: response.parsed_output.items, model: response.model });
   } catch (error) {
     if (error instanceof Anthropic.AuthenticationError) {

@@ -13,6 +13,8 @@ import { checkbox } from '../ui/widgets.js';
 import { celebrate, confetti } from '../ui/confetti.js';
 import { openMeeting } from '../forms/meetingRoom.js';
 import { openWeekly } from './weekly.js';
+import { processLearning, saveLearnings, learningsBetween, learnCat } from '../core/learn.js';
+import { openLearnReport } from '../forms/learnReport.js';
 
 export const MAX_FOCUS = 3;
 const MOODS = [
@@ -226,6 +228,7 @@ export function openReviewDay() {
   const noNotes = meetings.filter((m) => meetingStatus({ ...m, occurrence: key }) === 'past' && !minutesOf(m, key).notes?.trim());
   const move = new Set(open.map((t) => t.id));
   let mood = day.mood || null;
+  const learned = learningsBetween(key, key);
   const pct = todays.length ? Math.round((done.length / todays.length) * 100) : 0;
 
   const headline =
@@ -265,12 +268,18 @@ export function openReviewDay() {
           <div class="rv-notes">${noNotes.map((m) => `<button type="button" class="chip" data-note="${m.id}">${icon('users')}${esc(m.title)} · จดเลย</button>`).join('')}</div>
         </section>` : ''}
 
-        <section class="pd-sec" style="--i:3">
+        <section class="pd-sec rv-learn" style="--i:3">
+          <h4 class="section-title">💡 วันนี้เรียนรู้อะไรบ้าง?${learned.length ? ` <span class="count">${learned.length}</span>` : ''}</h4>
+          ${learned.length ? `<ul class="rv-learned">${learned.map((l) => `<li><span>${learnCat(l.cat).emoji}</span>${esc(l.text)}</li>`).join('')}</ul>` : ''}
+          <textarea class="textarea" id="rv-learn" rows="2" maxlength="3000" placeholder="${learned.length ? 'เพิ่มอีกได้ ' : ''}พิมพ์ทีละบรรทัด ระบบจะจัดหมวดให้อัตโนมัติ"></textarea>
+        </section>
+
+        <section class="pd-sec" style="--i:4">
           <h4 class="section-title">วันนี้เป็นอย่างไรบ้าง?</h4>
           <div class="moods" role="radiogroup" aria-label="ความรู้สึกวันนี้">
             ${MOODS.map((m) => `<button type="button" class="mood${mood === m.id ? ' on' : ''}" role="radio" aria-checked="${mood === m.id}" data-mood="${m.id}"><span>${m.emoji}</span><small>${m.label}</small></button>`).join('')}
           </div>
-          <textarea class="textarea" id="rv-note" placeholder="สิ่งที่ได้เรียนรู้ หรือเรื่องดี ๆ วันนี้…" maxlength="1000">${esc(day.note || '')}</textarea>
+          <textarea class="textarea" id="rv-note" placeholder="เรื่องดี ๆ หรือสิ่งที่อยากจำของวันนี้…" maxlength="1000">${esc(day.note || '')}</textarea>
         </section>
       </div>`,
     footer: `<span class="spacer"></span>
@@ -321,11 +330,14 @@ export function openReviewDay() {
           });
           state.days[key] = { focus: [], ...(state.days[key] || {}), reviewed: true, mood, note };
         });
+        const pts = processLearning($('#rv-learn', root).value);
+        if (pts.length) saveLearnings(pts, key, 'review');
         if (focus.length && focusDone === focus.length) celebrate();
-        toast(
-          move.size ? `ปิดวันแล้ว · เลื่อน ${move.size} งานไปพรุ่งนี้ พักผ่อนนะ 🌙` : 'ปิดวันแล้ว พักผ่อนให้เต็มที่นะ 🌙',
-          { icon: '✨', duration: 4000 },
-        );
+        const parts = ['ปิดวันแล้ว'];
+        if (move.size) parts.push(`เลื่อน ${move.size} งานไปพรุ่งนี้`);
+        if (pts.length) parts.push(`จดการเรียนรู้ ${pts.length} เรื่อง 💡`);
+        const report = pts.length || learned.length ? { action: 'ส่งรายงาน LINE', onAction: () => openLearnReport({ period: 'today' }), duration: 7000 } : {};
+        toast(`${parts.join(' · ')} พักผ่อนนะ 🌙`, { icon: '✨', duration: 4000, ...report });
         close();
       });
     },

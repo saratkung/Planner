@@ -8,7 +8,7 @@ import { goalProgress } from './selectors.js';
 import { toast } from '../ui/toast.js';
 import { confetti, celebrate } from '../ui/confetti.js';
 
-const LABEL = { tasks: 'งาน', events: 'นัดหมาย', goals: 'เป้าหมาย' };
+const LABEL = { tasks: 'งาน', events: 'นัดหมาย', goals: 'เป้าหมาย', learnings: 'บันทึก' };
 
 function burstFrom(node, count = 26) {
   if (!node) return;
@@ -95,7 +95,8 @@ export function removeWithUndo(col, id, node) {
   if (!item) return;
   animateOut(node, () => {
     const snap = store.remove(col, id);
-    toast(`ลบ${LABEL[col]} “${item.title}” แล้ว`, {
+    const name = item.title || (item.text?.length > 30 ? item.text.slice(0, 30) + '…' : item.text);
+    toast(`ลบ${LABEL[col]} “${name}” แล้ว`, {
       icon: '🗑️',
       action: 'เลิกทำ',
       onAction: () => store.restore(snap),

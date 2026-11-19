@@ -5,7 +5,7 @@ import { uid, todayKey, toKey, addDays } from './utils.js';
 
 const KEY = 'planner.v1';
 const VERSION = 2;
-const COLLECTIONS = ['tasks', 'events', 'goals', 'templates'];
+const COLLECTIONS = ['tasks', 'events', 'goals', 'templates', 'learnings'];
 
 const defaultGcal = () => ({
   enabled: false, // เชื่อมต่อ Google Calendar อยู่หรือไม่
@@ -19,7 +19,7 @@ const defaultGcal = () => ({
 const defaultBackup = () => ({ auto: true, lastBackup: null, fileId: null });
 const defaultLock = () => ({ enabled: false, salt: '', hash: '', after: 1 }); // after = ล็อกเมื่อออกจากแอปเกินกี่นาที
 // การแจ้งเตือน: lead = เตือนก่อนกี่นาที, gcal = ใส่การแจ้งเตือนในนัดที่ส่งไป Google ด้วย
-const defaultNotify = () => ({ enabled: false, lead: 10, events: true, tasks: true, morning: true, gcal: true });
+const defaultNotify = () => ({ enabled: false, lead: 10, events: true, tasks: true, morning: true, learn: true, gcal: true });
 const defaultSettings = () => ({
   name: '', theme: 'auto', weekStart: 0, workStart: '08:30', workEnd: '17:30',
   gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(), notify: defaultNotify(),
@@ -52,10 +52,11 @@ function normalize(data) {
     events: Array.isArray(data.events) ? data.events : [],
     goals: Array.isArray(data.goals) ? data.goals : [],
     templates: Array.isArray(data.templates) ? data.templates : [],
+    learnings: Array.isArray(data.learnings) ? data.learnings : [], // วันนี้เรียนรู้อะไร
     days: data.days && typeof data.days === 'object' ? data.days : {},
     settings: { ...defaultSettings(), ...(data.settings || {}) },
     // การลบที่ต้องซิงก์ไปเครื่องอื่น: { tasks: { id: เวลาที่ลบ }, ... }
-    deleted: { tasks: {}, events: {}, goals: {}, templates: {}, days: {}, ...(data.deleted || {}) },
+    deleted: { tasks: {}, events: {}, goals: {}, templates: {}, learnings: {}, days: {}, ...(data.deleted || {}) },
     settingsUpdatedAt: data.settingsUpdatedAt || 0,
     demoClearedAt: data.demoClearedAt || 0,
   };
@@ -464,9 +465,22 @@ function seed() {
     task('อัปเดตบอร์ดงาน Sprint', d(-2), { meetingId: planning.id, meetingDate: d(-3), done: true, doneAt: now - 2 * day }),
   );
 
+  // สิ่งที่ได้เรียนรู้ (ตัวอย่าง)
+  const ln = (date, text, cat, ago = 0) => ({ id: uid(), date, text, cat, source: '', createdAt: now - ago * 60000 });
+  const learnings = [
+    ln(d(0), 'ก่อนขอหมายค้นต้องมีพยานหลักฐานตามสมควร และระบุสถานที่ให้ชัดเจน', 'law', 90),
+    ln(d(0), 'สรุปประชุมทันทีหลังจบ ช่วยให้ทีมไม่ลืมว่าใครรับงานอะไร', 'work', 60),
+    ln(d(0), 'ฟังลูกน้องให้จบก่อนสั่งงาน เขาเสนอวิธีที่ดีกว่าที่คิดไว้', 'people', 30),
+    ln(d(-1), 'ใช้ Google Sheets ตั้งเงื่อนไขสีช่วยดูงานที่ใกล้ครบกำหนดได้ทันที', 'tech'),
+    ln(d(-1), 'นอนก่อนห้าทุ่มแล้วตื่นมาสมองโล่งกว่ามาก', 'health'),
+    ln(d(-2), 'ตรวจสอบเส้นทางเงินบัญชีม้าต้องประสานธนาคารให้เร็วก่อนเงินถูกโอนต่อ', 'work'),
+    ln(d(-3), 'อย่าตัดสินใจตอนโกรธ รอให้ใจเย็นก่อนแล้วค่อยคุย', 'life'),
+    ln(d(-4), 'ลดหย่อนภาษีด้วยกองทุนได้ ต้องถือให้ครบตามเงื่อนไข', 'finance'),
+  ];
+
   // ทำเครื่องหมายว่าเป็นข้อมูลตัวอย่าง (ซิงก์หลายเครื่องจะไม่ได้ข้อมูลตัวอย่างซ้ำ)
-  [tasks, events, goals].forEach((list) => list.forEach((x) => (x.seed = true)));
-  return normalize({ version: VERSION, tasks, events, goals, days: {}, settings: defaultSettings() });
+  [tasks, events, goals, learnings].forEach((list) => list.forEach((x) => (x.seed = true)));
+  return normalize({ version: VERSION, tasks, events, goals, learnings, days: {}, settings: defaultSettings() });
 }
 
 export { todayKey };

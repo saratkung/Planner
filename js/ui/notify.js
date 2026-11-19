@@ -126,6 +126,15 @@ export function dueReminders(now = new Date()) {
       });
     }
   }
+  if (c.learn !== false) {
+    // 2 ทุ่ม: ยังไม่ได้จดว่าวันนี้เรียนรู้อะไร
+    const key = todayKey();
+    const d = new Date(`${key}T20:00:00`);
+    const has = (store.state.learnings || []).some((l) => l.date === key);
+    if (!has && now >= d && now - d <= 3 * 60 * 60000) {
+      out.push({ key: `l:${key}`, title: '💡 วันนี้เรียนรู้อะไรบ้าง?', body: 'จดสัก 1 ข้อ แล้วส่งรายงานเข้า LINE ได้เลย', url: './#learn' });
+    }
+  }
   return out;
 }
 

@@ -268,5 +268,6 @@ export function weekStats(offset = 0) {
     pastMeetings: pastMeetings.length, withNotes, byCategory, milestones, goals,
     focusTotal: perDay.reduce((a, d) => a + d.focus, 0), focusDone: perDay.reduce((a, d) => a + d.focusDone, 0),
     focusMins: perDay.reduce((a, d) => a + d.focusMins, 0),
+    learned: (store.state.learnings || []).filter((l) => inWeek(l.date)).length,
   };
 }

@@ -12,6 +12,8 @@ import { openMeeting } from '../forms/meetingRoom.js';
 import { openEventForm } from '../forms/eventForm.js';
 import { openTaskForm } from '../forms/taskForm.js';
 import { openGoalForm } from '../forms/goalForm.js';
+import { openLearnEdit } from '../forms/learnReport.js';
+import { learnCat } from '../core/learn.js';
 
 const RECENT_KEY = 'planner.recentSearches';
 const GROUPS = [
@@ -20,6 +22,7 @@ const GROUPS = [
   { id: 'event', label: 'นัดหมาย', emoji: '📅' },
   { id: 'task', label: 'งาน', emoji: '✅' },
   { id: 'goal', label: 'เป้าหมาย', emoji: '🎯' },
+  { id: 'learn', label: 'การเรียนรู้', emoji: '💡' },
 ];
 const PER_GROUP = 6;
 
@@ -177,6 +180,20 @@ export function searchAll(q, { includeDone = true } = {}) {
     });
   });
 
+  (store.state.learnings || []).forEach((l) => {
+    const c = learnCat(l.cat);
+    if (!matchAll([l.text, c.label])) return;
+    results.push({
+      group: 'learn',
+      id: l.id,
+      date: l.date,
+      title: l.text.length > 80 ? l.text.slice(0, 80) + '…' : l.text,
+      sub: `${c.emoji} ${c.label} · ${relativeDay(l.date)}`,
+      snip: l.text.length > 80 ? snippet(l.text, ts, 90) : '',
+      score: 3 + dateScore(l.date) + (norm(l.text).includes(ts[0]) ? 4 : 0),
+    });
+  });
+
   return results.sort((a, b) => b.score - a.score);
 }
 
@@ -186,6 +203,10 @@ function openResult(r, close, navigate) {
     if (r.group === 'meeting' || r.group === 'note') return openMeeting(r.id, r.date || todayKey());
     if (r.group === 'event') return openEventForm(store.find('events', r.id));
     if (r.group === 'task') return openTaskForm(store.find('tasks', r.id));
+    if (r.group === 'learn') {
+      navigate?.('learn');
+      return openLearnEdit(store.find('learnings', r.id));
+    }
     if (r.group === 'goal') {
       navigate?.('goals');
       return openGoalForm(store.find('goals', r.id));
@@ -207,7 +228,7 @@ export function openSearch({ navigate, query = '' } = {}) {
       <div class="srch">
         <div class="srch-box">
           ${icon('search')}
-          <input class="input" id="srch-q" type="search" placeholder="ค้นหาประชุม งาน บันทึก ชื่อคน สถานที่…" value="${esc(query)}" autocomplete="off" enterkeyhint="search" aria-label="คำค้นหา" />
+          <input class="input" id="srch-q" type="search" placeholder="ค้นหาประชุม งาน บันทึก การเรียนรู้ ชื่อคน…" value="${esc(query)}" autocomplete="off" enterkeyhint="search" aria-label="คำค้นหา" />
         </div>
         <div class="chips srch-filters" role="tablist">
           ${[{ id: 'all', label: 'ทั้งหมด', emoji: '' }, ...GROUPS].map((g) => `<button type="button" class="chip${g.id === 'all' ? ' active' : ''}" data-filter="${g.id}">${g.emoji ? g.emoji + ' ' : ''}${g.label}<span class="srch-n" data-n="${g.id}"></span></button>`).join('')}

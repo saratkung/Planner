@@ -38,6 +38,7 @@ const P = {
   clipboard: '<rect x="8" y="2.5" width="8" height="4" rx="1.5"/><path d="M16 4.5h1.5a2 2 0 0 1 2 2V20a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2H8"/><path d="m9 14 2 2 4-4"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   square: '<rect x="3" y="3" width="18" height="18" rx="4"/>',
+  bulb: '<path d="M9 18h6M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-3.9 11.7c.6.5.9 1.2.9 1.9v.4h6v-.4c0-.7.3-1.4.9-1.9A6.5 6.5 0 0 0 12 2.5Z"/>',
 };
 
 export function icon(name, cls = '') {
