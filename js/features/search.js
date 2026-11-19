@@ -14,6 +14,8 @@ import { openTaskForm } from '../forms/taskForm.js';
 import { openGoalForm } from '../forms/goalForm.js';
 import { openLearnEdit } from '../forms/learnReport.js';
 import { learnCat } from '../core/learn.js';
+import { pfType } from '../core/portfolio.js';
+import { openPortfolioDetail } from '../forms/portfolioForm.js';
 
 const RECENT_KEY = 'planner.recentSearches';
 const GROUPS = [
@@ -23,6 +25,7 @@ const GROUPS = [
   { id: 'task', label: 'งาน', emoji: '✅' },
   { id: 'goal', label: 'เป้าหมาย', emoji: '🎯' },
   { id: 'learn', label: 'การเรียนรู้', emoji: '💡' },
+  { id: 'portfolio', label: 'แฟ้มผลงาน', emoji: '🏆' },
 ];
 const PER_GROUP = 6;
 
@@ -194,6 +197,22 @@ export function searchAll(q, { includeDone = true } = {}) {
     });
   });
 
+  (store.state.portfolio || []).forEach((p) => {
+    const t = pfType(p.type);
+    const figs = (p.figures || []).map((f) => `${f.label} ${f.n} ${f.unit}`).join(' ');
+    if (!matchAll([p.title, p.result, p.role, p.org, p.lesson, t.label, figs])) return;
+    const where = [p.result, p.lesson, p.org].find((f) => f && ts.some((x) => norm(f).includes(x)));
+    results.push({
+      group: 'portfolio',
+      id: p.id,
+      date: p.date,
+      title: p.title,
+      sub: `${t.emoji} ${t.label} · ${formatDate(p.date, { short: true })}${p.role ? ' · ' + p.role : ''}`,
+      snip: where ? snippet(where, ts) : '',
+      score: titleScore(p.title) + 2 + (p.highlight ? 2 : 0),
+    });
+  });
+
   return results.sort((a, b) => b.score - a.score);
 }
 
@@ -203,6 +222,10 @@ function openResult(r, close, navigate) {
     if (r.group === 'meeting' || r.group === 'note') return openMeeting(r.id, r.date || todayKey());
     if (r.group === 'event') return openEventForm(store.find('events', r.id));
     if (r.group === 'task') return openTaskForm(store.find('tasks', r.id));
+    if (r.group === 'portfolio') {
+      navigate?.('portfolio');
+      return openPortfolioDetail(r.id);
+    }
     if (r.group === 'learn') {
       navigate?.('learn');
       return openLearnEdit(store.find('learnings', r.id));

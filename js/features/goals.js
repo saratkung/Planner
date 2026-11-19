@@ -10,6 +10,8 @@ import { icon } from '../ui/icons.js';
 import { ring, checkbox, emptyState, animateMeters, meterMemory, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openGoalForm } from '../forms/goalForm.js';
 import { openTaskForm } from '../forms/taskForm.js';
+import { openPortfolioForm } from '../forms/portfolioForm.js';
+import { draftFrom } from '../core/portfolio.js';
 
 export default {
   id: 'goals',
@@ -120,6 +122,7 @@ export default {
         if (t) return toggleTask(t.dataset.task, check);
       }
       if (e.target.closest('[data-edit]')) return openGoalForm(store.find('goals', gid));
+      if (e.target.closest('[data-topf]')) return openPortfolioForm(null, draftFrom('goal', store.find('goals', gid)));
       if (e.target.closest('[data-del]')) return removeWithUndo('goals', gid, card);
       if (e.target.closest('[data-addtask]'))
         return openTaskForm(null, { goalId: gid, category: store.find('goals', gid).category });
@@ -169,6 +172,7 @@ function goalCard(g, p, track, mem, isExpanded) {
           ${g.description ? `<p class="muted goal-desc">${esc(g.description)}</p>` : ''}
         </div>
         <div class="goal-actions">
+          <button class="icon-btn sm" data-topf aria-label="เก็บเข้าแฟ้มผลงาน" title="เก็บเข้าแฟ้มผลงาน">${icon('trophy')}</button>
           <button class="icon-btn sm" data-edit aria-label="แก้ไขเป้าหมาย">${icon('edit')}</button>
           <button class="icon-btn sm danger" data-del aria-label="ลบเป้าหมาย">${icon('trash')}</button>
         </div>

@@ -5,7 +5,7 @@ import { uid, todayKey, toKey, addDays } from './utils.js';
 
 const KEY = 'planner.v1';
 const VERSION = 2;
-const COLLECTIONS = ['tasks', 'events', 'goals', 'templates', 'learnings'];
+const COLLECTIONS = ['tasks', 'events', 'goals', 'templates', 'learnings', 'portfolio'];
 
 const defaultGcal = () => ({
   enabled: false, // เชื่อมต่อ Google Calendar อยู่หรือไม่
@@ -24,6 +24,7 @@ const defaultSettings = () => ({
   name: '', theme: 'auto', weekStart: 0, workStart: '08:30', workEnd: '17:30',
   gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(), notify: defaultNotify(),
   ai: { enabled: false, code: '' }, // AI ช่วยอ่านข้อความ (รหัสเก็บเฉพาะเครื่องนี้)
+  profile: { rank: '', fullName: '', position: '', unit: '' }, // ใช้ในรายงานแฟ้มผลงาน
 });
 // ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
 const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify', 'ai', 'focus'];
@@ -53,10 +54,11 @@ function normalize(data) {
     goals: Array.isArray(data.goals) ? data.goals : [],
     templates: Array.isArray(data.templates) ? data.templates : [],
     learnings: Array.isArray(data.learnings) ? data.learnings : [], // วันนี้เรียนรู้อะไร
+    portfolio: Array.isArray(data.portfolio) ? data.portfolio : [], // แฟ้มสะสมผลงาน
     days: data.days && typeof data.days === 'object' ? data.days : {},
     settings: { ...defaultSettings(), ...(data.settings || {}) },
     // การลบที่ต้องซิงก์ไปเครื่องอื่น: { tasks: { id: เวลาที่ลบ }, ... }
-    deleted: { tasks: {}, events: {}, goals: {}, templates: {}, learnings: {}, days: {}, ...(data.deleted || {}) },
+    deleted: { tasks: {}, events: {}, goals: {}, templates: {}, learnings: {}, portfolio: {}, days: {}, ...(data.deleted || {}) },
     settingsUpdatedAt: data.settingsUpdatedAt || 0,
     demoClearedAt: data.demoClearedAt || 0,
   };
@@ -65,6 +67,12 @@ function normalize(data) {
   s.settings.backup = { ...defaultBackup(), ...(s.settings.backup || {}) };
   s.settings.lock = { ...defaultLock(), ...(s.settings.lock || {}) };
   s.settings.notify = { ...defaultNotify(), ...(s.settings.notify || {}) };
+  s.settings.profile = { ...defaultSettings().profile, ...(s.settings.profile || {}) };
+  s.portfolio.forEach((p) => {
+    if (!Array.isArray(p.figures)) p.figures = [];
+    if (!Array.isArray(p.files)) p.files = [];
+    if (!Array.isArray(p.links)) p.links = [];
+  });
   s.goals.forEach((g) => (g.milestones = Array.isArray(g.milestones) ? g.milestones : []));
   s.events.forEach((e) => {
     // v1 -> v2: นัดที่ชื่อมีคำว่า "ประชุม" ถือเป็นการประชุม
@@ -80,7 +88,7 @@ function normalize(data) {
 
 // ---------- ติดตามการเปลี่ยนแปลง (สำหรับซิงก์ระหว่างเครื่อง) ----------
 // เทียบกับครั้งก่อน: รายการที่เปลี่ยนได้ updatedAt ใหม่, รายการที่หายไปถูกบันทึกว่า "ลบ"
-const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd'];
+const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd', 'profile'];
 let sigs = null;
 const sigOf = (o) => {
   const { updatedAt, ...rest } = o || {};
@@ -478,9 +486,28 @@ function seed() {
     ln(d(-4), 'ลดหย่อนภาษีด้วยกองทุนได้ ต้องถือให้ครบตามเงื่อนไข', 'finance'),
   ];
 
+  // แฟ้มผลงาน (ตัวอย่าง ไม่มีข้อมูลบุคคล)
+  const ym = (y, m, dd) => `${t.getFullYear() + y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+  const pf = (o) => ({ id: uid(), role: '', org: '', result: '', lesson: '', figures: [], files: [], links: [], highlight: false, endDate: '', createdAt: now, ...o });
+  const portfolio = [
+    pf({ type: 'case', title: 'สืบสวนจับกุมเครือข่ายแก๊งคอลเซ็นเตอร์', date: d(-20), role: 'หัวหน้าชุด', highlight: true,
+      result: 'วางแผนสืบสวนเส้นทางการเงิน ประสานธนาคาร 4 แห่ง และนำหมายจับเข้าตรวจค้นพร้อมกัน 3 จุด',
+      figures: [{ label: 'จับกุมผู้ต้องหา', n: 12, unit: 'ราย' }, { label: 'ยึดทรัพย์', n: 3500000, unit: 'บาท' }],
+      lesson: 'ประสานธนาคารให้เร็วตั้งแต่วันแรก ช่วยอายัดเงินได้ทัน' }),
+    pf({ type: 'award', title: 'ได้รับหนังสือชมเชยจากผู้บังคับบัญชา', date: d(-8), org: 'กองบังคับการ', role: 'ผู้ได้รับรางวัล',
+      result: 'จากผลการปฏิบัติงานคดีแก๊งคอลเซ็นเตอร์' }),
+    pf({ type: 'training', title: 'หลักสูตรการสืบสวนอาชญากรรมทางเทคโนโลยี', date: ym(0, 3, 10), endDate: ym(0, 3, 21), org: 'สถาบันฝึกอบรม', role: 'ผู้เข้าอบรม',
+      figures: [{ label: 'ชั่วโมงอบรม', n: 60, unit: 'ชั่วโมง' }], result: 'ผ่านการอบรมและได้รับวุฒิบัตร' }),
+    pf({ type: 'speaker', title: 'วิทยากรบรรยายเรื่องภัยออนไลน์ให้ประชาชน', date: ym(0, 6, 5), role: 'วิทยากร', org: 'ชุมชนในพื้นที่',
+      figures: [{ label: 'ผู้เข้าร่วม', n: 150, unit: 'คน' }] }),
+    pf({ type: 'case', title: 'คลี่คลายคดีลักทรัพย์ต่อเนื่องในพื้นที่', date: ym(-1, 11, 14), role: 'ผู้สืบสวน',
+      figures: [{ label: 'จับกุมผู้ต้องหา', n: 3, unit: 'ราย' }], result: 'ตรวจสอบกล้องวงจรปิดย้อนหลังและติดตามจับกุมได้ภายใน 5 วัน' }),
+    pf({ type: 'career', title: 'ได้รับแต่งตั้งเป็นรองสารวัตร', date: ym(-1, 4, 1), highlight: true, result: 'เริ่มรับผิดชอบงานสืบสวน' }),
+  ];
+
   // ทำเครื่องหมายว่าเป็นข้อมูลตัวอย่าง (ซิงก์หลายเครื่องจะไม่ได้ข้อมูลตัวอย่างซ้ำ)
-  [tasks, events, goals, learnings].forEach((list) => list.forEach((x) => (x.seed = true)));
-  return normalize({ version: VERSION, tasks, events, goals, learnings, days: {}, settings: defaultSettings() });
+  [tasks, events, goals, learnings, portfolio].forEach((list) => list.forEach((x) => (x.seed = true)));
+  return normalize({ version: VERSION, tasks, events, goals, learnings, portfolio, days: {}, settings: defaultSettings() });
 }
 
 export { todayKey };

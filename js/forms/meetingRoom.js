@@ -113,7 +113,8 @@ export function openMeeting(eventId, dateKey) {
             </div>
 
             <div class="mr-section">
-              <h4 class="section-title">${icon('note')} บันทึกการประชุม <span class="save-state" id="mr-save"></span></h4>
+              <h4 class="section-title">${icon('note')} บันทึกการประชุม <span class="save-state" id="mr-save"></span>
+                <button type="button" class="link-btn mr-tpl" data-to-pf title="เก็บการประชุม/ภารกิจนี้เป็นผลงาน">⭐ เข้าแฟ้มผลงาน</button></h4>
               <textarea class="textarea mr-notes" id="mr-notes" placeholder="จดประเด็นสำคัญ ข้อตกลง และการตัดสินใจ...">${esc(keepNotes)}</textarea>
             </div>
 
@@ -224,6 +225,15 @@ export function openMeeting(eventId, dateKey) {
         root.querySelector('[data-copy]').click(); // แชร์ไม่ได้: คัดลอกแทน
       });
 
+      host.addEventListener('click', (e) => {
+        if (!e.target.closest('[data-to-pf]')) return;
+        const notes = $('#mr-notes', host)?.value || '';
+        flushNotes();
+        close();
+        Promise.all([import('./portfolioForm.js'), import('../core/portfolio.js')]).then(([{ openPortfolioForm }, { draftFrom }]) =>
+          setTimeout(() => openPortfolioForm(null, draftFrom('meeting', store.find('events', eventId), { date: dateKey, notes })), 260),
+        );
+      });
       host.addEventListener('click', (e) => {
         if (!e.target.closest('[data-save-tpl]')) return;
         flushNotes();

@@ -26,7 +26,15 @@ function checkGoalCompleted(goalId, before) {
   const g = store.find('goals', goalId);
   if (g && goalProgress(g).pct === 100) {
     celebrate();
-    toast(`สำเร็จเป้าหมาย “${g.title}” แล้ว!`, { icon: '🏆', duration: 4500 });
+    toast(`สำเร็จเป้าหมาย “${g.title}” แล้ว!`, {
+      icon: '🏆',
+      duration: 7000,
+      action: '⭐ เข้าแฟ้มผลงาน',
+      onAction: async () => {
+        const [{ openPortfolioForm }, { draftFrom }] = await Promise.all([import('../forms/portfolioForm.js'), import('./portfolio.js')]);
+        openPortfolioForm(null, draftFrom('goal', store.find('goals', goalId) || g));
+      },
+    });
   }
 }
 

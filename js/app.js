@@ -29,8 +29,14 @@ import schedule from './features/schedule.js';
 import goals from './features/goals.js';
 import meetings from './features/meetings.js';
 import learn from './features/learn.js';
+import portfolio from './features/portfolio.js';
+import { openPortfolioForm } from './forms/portfolioForm.js';
+import { openModal } from './ui/modal.js';
+import { openWeekly } from './features/weekly.js';
 
-const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals, learn];
+const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals, learn, portfolio];
+// แถบเมนูมือถือ: หน้าที่ใช้บ่อย + ปุ่ม "เพิ่มเติม" สำหรับหน้าที่เหลือ
+const MOBILE_TABS = ['dashboard', 'tasks', 'meetings', 'calendar', 'learn'];
 let viewEl = $('#view');
 let active = null; // { feature, instance }
 
@@ -41,7 +47,8 @@ function buildNav() {
       f.id === 'tasks' ? '<b class="badge" hidden></b>' : ''
     }</a>`;
   $('#nav').innerHTML = `<span class="nav-indicator"></span>${FEATURES.map(link).join('')}`;
-  $('#tabbar').innerHTML = `<span class="nav-indicator"></span>${FEATURES.map(link).join('')}`;
+  $('#tabbar').innerHTML = `<span class="nav-indicator"></span>${FEATURES.filter((f) => MOBILE_TABS.includes(f.id)).map(link).join('')}
+    <a href="#" class="tab-more" data-more aria-haspopup="dialog">${icon('grid')}<span>เพิ่มเติม</span></a>`;
   $('#btn-settings').innerHTML = `${icon('settings')}<span class="label">ตั้งค่า</span>`;
   $('#btn-settings-m').innerHTML = icon('settings');
   $('#btn-quick').innerHTML = `${icon('plus')}<span class="label">สร้างใหม่</span>`;
@@ -49,6 +56,7 @@ function buildNav() {
     ['paste', 'clipboard', 'วางข้อความ → แปลงอัตโนมัติ', '#d9a21b', 'V'],
     ['task', 'checkSquare', 'งานใหม่', '#6366f1', 'N'],
     ['learn', 'bulb', 'วันนี้เรียนรู้อะไร', '#d9a21b', 'L'],
+    ['portfolio', 'trophy', 'เพิ่มผลงานเข้าแฟ้ม', '#5b4bc4', 'P'],
     ['focus', 'clock', 'จับเวลาโฟกัส 25 นาที', '#10b981', 'F'],
     ['meeting', 'users', 'นัดประชุม', '#0ea5e9', 'M'],
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
@@ -110,6 +118,7 @@ function route() {
   viewEl.firstElementChild?.classList.add('view-enter');
 
   $$('[data-route]').forEach((a) => a.classList.toggle('active', a.dataset.route === feature.id));
+  $('#tabbar [data-more]')?.classList.toggle('active', !MOBILE_TABS.includes(feature.id));
   moveIndicators();
   updateHeader();
   document.title = `${feature.label} · Life Planner`;
@@ -118,6 +127,39 @@ function route() {
 
 export function navigate(id) {
   location.hash = `#${id}`;
+}
+
+// ---------- เมนู "เพิ่มเติม" (มือถือ) ----------
+function openMoreSheet() {
+  const pages = FEATURES.filter((f) => !MOBILE_TABS.includes(f.id));
+  const tools = [
+    ['search', 'search', 'ค้นหา', '#0ea5e9'],
+    ['weekly', 'chart', 'สรุปสัปดาห์', '#10b981'],
+    ['settings', 'settings', 'ตั้งค่า', '#64748b'],
+  ];
+  const tile = (attr, ic, label, c, isActive = false, i = 0) =>
+    `<button type="button" class="more-tile${isActive ? ' active' : ''}" ${attr} style="--c:${c};--i:${i}"><span>${icon(ic)}</span>${label}</button>`;
+  const colors = { schedule: '#ec4899', goals: '#10b981', portfolio: '#d9a21b' };
+  openModal({
+    title: 'เมนูเพิ่มเติม',
+    size: 460,
+    body: `<div class="more-grid">${pages.map((f, i) => tile(`data-go="${f.id}"`, f.icon, f.label, colors[f.id] || '#5b4bc4', active?.feature === f, i)).join('')}
+      ${tools.map(([id, ic, label, c], i) => tile(`data-tool="${id}"`, ic, label, c, false, pages.length + i)).join('')}</div>`,
+    onMount(root, close) {
+      root.addEventListener('click', (e) => {
+        const go = e.target.closest('[data-go]')?.dataset.go;
+        const tool = e.target.closest('[data-tool]')?.dataset.tool;
+        if (!go && !tool) return;
+        close();
+        if (go) return navigate(go);
+        setTimeout(() => {
+          if (tool === 'search') openSearch({ navigate });
+          if (tool === 'weekly') openWeekly();
+          if (tool === 'settings') openSettings();
+        }, 230);
+      });
+    },
+  });
 }
 
 // ---------- quick add menu ----------
@@ -147,6 +189,7 @@ function quickCreate(kind) {
   if (kind === 'paste') return openSmartPaste('', { navigate });
   if (kind === 'focus') return focusActive() ? toast('กำลังจับเวลาอยู่ แตะนาฬิกามุมล่างเพื่อดู', { icon: '⏱️' }) : startFocus();
   if (kind === 'learn') return openLearn();
+  if (kind === 'portfolio') return openPortfolioForm();
   if (kind === 'task') openTaskForm();
   if (kind === 'event') openEventForm();
   if (kind === 'meeting') openEventForm(null, { isMeeting: true });
@@ -198,6 +241,7 @@ function setupShortcuts() {
     else if (k === 'f') { e.preventDefault(); quickCreate('focus'); }
     else if (k === 'g') { e.preventDefault(); openGoalForm(); }
     else if (k === 'l') { e.preventDefault(); openLearn(); }
+    else if (k === 'p') { e.preventDefault(); openPortfolioForm(); }
     else if (k === 't') toggleTheme();
     else if (/^[1-9]$/.test(k) && FEATURES[Number(k) - 1]) navigate(FEATURES[Number(k) - 1].id);
   });
@@ -277,6 +321,11 @@ function init() {
   setupShortcuts();
 
   $('#btn-theme').addEventListener('click', toggleTheme);
+  $('#tabbar').addEventListener('click', (e) => {
+    if (!e.target.closest('[data-more]')) return;
+    e.preventDefault();
+    openMoreSheet();
+  });
   $('#btn-search').innerHTML = icon('search');
   $('#btn-search').addEventListener('click', () => openSearch({ navigate }));
   $('#btn-settings').addEventListener('click', () => openSettings());

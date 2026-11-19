@@ -160,3 +160,55 @@ export function setupDrive() {
   });
   if (canAuto()) scheduleAuto(1500); // เปิดแอป: ดึงข้อมูลล่าสุดจากเครื่องอื่น
 }
+
+// ---------------- ไฟล์แนบของแฟ้มผลงาน ----------------
+// เก็บในโฟลเดอร์ "Life Planner – แฟ้มผลงาน" ใน Drive ของผู้ใช้ (ส่วนตัว ไม่แชร์ให้ใคร)
+const FOLDER_NAME = 'Life Planner – แฟ้มผลงาน';
+const FOLDER_KEY = 'planner.pfFolder';
+export const MAX_ATTACH = 25 * 1024 * 1024;
+
+export const canAttach = () => connected();
+
+async function portfolioFolder() {
+  let id = null;
+  try {
+    id = localStorage.getItem(FOLDER_KEY);
+  } catch (_) {}
+  if (id) {
+    try {
+      const f = await googleFetch(`${FILES}/${id}?fields=id,trashed`);
+      if (!f.trashed) return id;
+    } catch (e) {
+      if (!e.gone) throw e;
+    }
+  }
+  const q = encodeURIComponent("appProperties has { key='lifePlanner' and value='portfolio' } and trashed = false");
+  const res = await googleFetch(`${FILES}?q=${q}&pageSize=1&fields=files(id)`);
+  id = res.files?.[0]?.id;
+  if (!id) {
+    const f = await googleFetch(`${FILES}?fields=id`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder', appProperties: { lifePlanner: 'portfolio' } }),
+    });
+    id = f.id;
+  }
+  try {
+    localStorage.setItem(FOLDER_KEY, id);
+  } catch (_) {}
+  return id;
+}
+
+/** อัปโหลดไฟล์ (รูป / PDF / เอกสาร) เข้า Drive → { id, name, mime, link, size } */
+export async function uploadAttachment(file) {
+  if (!connected()) throw new Error('เชื่อมต่อ Google ก่อน (ตั้งค่า → Google) จึงจะแนบไฟล์ได้');
+  if (file.size > MAX_ATTACH) throw new Error(`ไฟล์ “${file.name}” ใหญ่เกิน 25 MB`);
+  await ensureToken({ interactive: true, scope: DRIVE_SCOPE });
+  const folder = await portfolioFolder();
+  const meta = { name: file.name, parents: [folder], appProperties: { lifePlanner: 'attachment' } };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', file);
+  const f = await googleFetch(`${UPLOAD}?uploadType=multipart&fields=id,name,mimeType,webViewLink,size`, { method: 'POST', body: form });
+  return { id: f.id, name: f.name, mime: f.mimeType || file.type, link: f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`, size: Number(f.size) || file.size };
+}

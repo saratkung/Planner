@@ -184,6 +184,7 @@ export function openLearnEdit(item) {
       <div class="field"><label for="le-date">วันที่</label>
         <input class="input" type="date" id="le-date" value="${esc(item.date)}" max="${todayKey()}" /></div></div>`,
     footer: `<button class="btn btn-danger" type="button" data-del>${icon('trash')}ลบ</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-topf title="เก็บเป็นผลงาน">⭐ เข้าแฟ้มผลงาน</button>
       <span class="spacer"></span>
       <button class="btn btn-ghost hide-mobile" data-close type="button">ยกเลิก</button>
       <button class="btn btn-primary" type="button" data-save>บันทึก</button>`,
@@ -203,6 +204,11 @@ export function openLearnEdit(item) {
           setCat(next);
           toast(`จัดเป็นหมวด ${learnCat(next).emoji} ${learnCat(next).label}`, { icon: '✨' });
           return;
+        }
+        if (e.target.closest('[data-topf]')) {
+          close();
+          const [{ openPortfolioForm }, { draftFrom }] = await Promise.all([import('./portfolioForm.js'), import('../core/portfolio.js')]);
+          return setTimeout(() => openPortfolioForm(null, draftFrom('learning', item)), 260);
         }
         if (e.target.closest('[data-del]')) {
           close();
