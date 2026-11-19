@@ -31,6 +31,7 @@ import meetings from './features/meetings.js';
 import learn from './features/learn.js';
 import portfolio from './features/portfolio.js';
 import { openPortfolioForm } from './forms/portfolioForm.js';
+import { openPortfolioPaste } from './forms/portfolioPaste.js';
 import { openModal } from './ui/modal.js';
 import { openWeekly } from './features/weekly.js';
 
@@ -56,7 +57,7 @@ function buildNav() {
     ['paste', 'clipboard', 'วางข้อความ → แปลงอัตโนมัติ', '#d9a21b', 'V'],
     ['task', 'checkSquare', 'งานใหม่', '#6366f1', 'N'],
     ['learn', 'bulb', 'วันนี้เรียนรู้อะไร', '#d9a21b', 'L'],
-    ['portfolio', 'trophy', 'เพิ่มผลงานเข้าแฟ้ม', '#5b4bc4', 'P'],
+    ['portfolio', 'trophy', 'วางข้อความ → แฟ้มผลงาน', '#5b4bc4', 'P'],
     ['focus', 'clock', 'จับเวลาโฟกัส 25 นาที', '#10b981', 'F'],
     ['meeting', 'users', 'นัดประชุม', '#0ea5e9', 'M'],
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
@@ -189,7 +190,7 @@ function quickCreate(kind) {
   if (kind === 'paste') return openSmartPaste('', { navigate });
   if (kind === 'focus') return focusActive() ? toast('กำลังจับเวลาอยู่ แตะนาฬิกามุมล่างเพื่อดู', { icon: '⏱️' }) : startFocus();
   if (kind === 'learn') return openLearn();
-  if (kind === 'portfolio') return openPortfolioForm();
+  if (kind === 'portfolio') return openPortfolioPaste();
   if (kind === 'task') openTaskForm();
   if (kind === 'event') openEventForm();
   if (kind === 'meeting') openEventForm(null, { isMeeting: true });
@@ -285,6 +286,7 @@ function setupSmartPaste() {
     const text = e.clipboardData?.getData('text/plain')?.trim();
     if (!text || text.length < 3) return;
     e.preventDefault();
+    if (active?.feature.id === 'portfolio') return openPortfolioPaste(text);
     openSmartPaste(text, { navigate });
   });
 }

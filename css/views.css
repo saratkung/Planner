@@ -1894,3 +1894,54 @@
 }
 .pf-form .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .pf-form .row .input { min-width: 0; width: 100%; }
+
+/* วางข้อความ → ผลงาน */
+.pp { display: flex; flex-direction: column; gap: 10px; }
+.pp-text { min-height: 110px; font-size: 14px; line-height: 1.6; }
+.pp-results { display: flex; flex-direction: column; gap: 10px; }
+.pp-hint p { margin: 4px 0 8px; font-size: 13px; color: var(--muted); }
+.pp-hint .chip { pointer-events: none; }
+.pp-done { margin: 2px 0 0; font-weight: 600; font-size: 14px; animation: fadeUp 0.4s var(--ease) both; }
+.pp-card {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px;
+  border: 1px solid var(--border); border-left: 4px solid var(--c); background: var(--surface-2);
+  transition: opacity 0.25s, filter 0.25s, border-color 0.3s;
+}
+.pp-card.enter { animation: lnSort 0.55s var(--spring) both; animation-delay: calc(var(--i) * 110ms); }
+.pp-card.off { opacity: 0.55; filter: grayscale(0.5); }
+.pp-head { display: flex; align-items: center; gap: 8px; }
+.pp-inc { position: relative; display: grid; place-items: center; width: 26px; height: 26px; flex: none; cursor: pointer; }
+.pp-inc input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.pp-check { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--border-strong); color: transparent; transition: all 0.2s var(--spring); }
+.pp-check svg { width: 15px; height: 15px; stroke-width: 3; }
+.pp-inc input:checked + .pp-check { background: var(--c); border-color: var(--c); color: #fff; transform: scale(1.05); }
+.pp-inc input:focus-visible + .pp-check { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pp-type { width: auto; height: 36px; font-size: 13px; padding: 0 30px 0 10px; }
+.pp-date { width: auto; height: 36px; font-size: 13px; padding: 0 8px; min-width: 0; }
+.pp-star { margin-left: auto; border: 0; background: none; font-size: 20px; filter: grayscale(1) opacity(0.35); transition: filter 0.2s, transform 0.3s var(--spring); }
+.pp-star.on { filter: none; transform: scale(1.15); }
+.pp-title { font-weight: 600; font-size: 15px; }
+.pp-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; }
+.pp-meta .input { height: 38px; font-size: 13.5px; }
+.pp-range { margin: 0; font-size: 12.5px; color: var(--text-2); }
+.pp-fig { flex-direction: row; align-items: center; gap: 6px; }
+.pp-fig b { margin-right: 2px; }
+.pp-fig button { border: 0; background: none; color: var(--muted); padding: 0; display: grid; }
+.pp-fig button svg { width: 13px; height: 13px; }
+.pp-privacy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 8px 10px; border-radius: 12px; font-size: 12.5px; background: var(--warn-soft); color: color-mix(in srgb, var(--warn) 75%, var(--text)); }
+.pp-privacy b { margin: 0 3px; }
+.pp-privacy .btn { height: 28px; }
+.pp-warn { margin: 0; font-size: 12.5px; color: var(--bad); }
+.pp-more summary { cursor: pointer; font-size: 12.5px; color: var(--muted); }
+.pp-more .textarea { margin-top: 6px; font-size: 13.5px; min-height: 70px; }
+.sp-pf-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; font-size: 13.5px; background: var(--gold-soft); animation: fadeUp 0.35s var(--ease) both; }
+.sp-pf-hint b { margin: 0 3px; }
+.sp-pf-hint .btn { margin-left: auto; height: 32px; }
+.pf-empty-btns { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .pp-meta { grid-template-columns: minmax(0, 1fr); }
+  .pf-tools { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .pf-tools #pf-paste { order: -2; }
+  .pf-tools #pf-new { order: -1; }
+  .pf-tools .pf-year-sel { width: 100%; }
+}

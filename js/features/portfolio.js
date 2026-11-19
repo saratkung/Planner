@@ -10,6 +10,7 @@ import { icon } from '../ui/icons.js';
 import { emptyState, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openPortfolioForm, openPortfolioDetail } from '../forms/portfolioForm.js';
 import { openPortfolioReport } from '../forms/portfolioReport.js';
+import { openPortfolioPaste } from '../forms/portfolioPaste.js';
 
 const VIEW_KEY = 'planner.pfView';
 const FIG_EMOJI = [
@@ -104,6 +105,7 @@ export default {
           <div class="pf-tools">
             <select class="select pf-year-sel" id="pf-year" aria-label="ปี"></select>
             <button class="btn btn-outline" id="pf-report">📄 ออกรายงาน</button>
+            <button class="btn btn-gold" id="pf-paste" title="วางข้อความจาก LINE / ข่าว / รายงาน แล้วแยกเป็นผลงานให้">${icon('clipboard')}วางข้อความ</button>
             <button class="btn btn-primary" id="pf-new">${icon('plus')}เพิ่มผลงาน</button>
           </div>
         </div>
@@ -179,7 +181,7 @@ export default {
             ? emptyState('🗂️', 'แฟ้มผลงานยังว่างอยู่', 'เริ่มจากผลงานที่ภูมิใจที่สุด 3 อย่าง แล้วค่อยเติมย้อนหลังทีละนิด')
             : emptyState('🔍', 'ไม่มีผลงานตามที่เลือก', 'ลองเปลี่ยนประเภทหรือปี')
         }${none ? `<div class="pf-empty-ideas">${['🕵️ คดีที่ภูมิใจ', '🏅 รางวัล / หนังสือชมเชย', '🎓 หลักสูตรที่ผ่าน', '📈 วันที่ได้เลื่อนตำแหน่ง'].map((x) => `<span>${x}</span>`).join('')}</div>
-          <div style="text-align:center"><button class="btn btn-primary" data-new>${icon('plus')}เพิ่มผลงานแรก</button></div>` : ''}</div>`;
+          <div class="pf-empty-btns"><button class="btn btn-gold" data-paste>${icon('clipboard')}วางข้อความ</button><button class="btn btn-primary" data-new>${icon('plus')}กรอกเอง</button></div>` : ''}</div>`;
         return;
       }
       if (view === 'timeline') {
@@ -207,6 +209,7 @@ export default {
 
     $('#pf-new', root).addEventListener('click', () => openPortfolioForm());
     $('#pf-report', root).addEventListener('click', () => openPortfolioReport());
+    $('#pf-paste', root).addEventListener('click', () => openPortfolioPaste());
     $('#pf-year', root).addEventListener('change', (e) => {
       year = e.target.value;
       track.reset();
@@ -215,6 +218,7 @@ export default {
     });
     root.addEventListener('click', (e) => {
       if (e.target.closest('[data-new]')) return openPortfolioForm();
+      if (e.target.closest('[data-paste]')) return openPortfolioPaste();
       const tb = e.target.closest('#pf-types [data-type]');
       if (tb) {
         type = tb.dataset.type;

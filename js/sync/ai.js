@@ -32,6 +32,31 @@ export async function aiParse(text, { code = cfg().code } = {}) {
   return (j.items || []).map((it) => toItem(it, text));
 }
 
+/** ให้ AI แยกผลงานจากข้อความ → ร่างผลงาน (รูปแบบเดียวกับ parsePortfolio) */
+export async function aiPortfolio(text, { code = cfg().code } = {}) {
+  const j = await callAI({ text, mode: 'portfolio' }, code);
+  const ok = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : '');
+  return (j.achievements || [])
+    .filter((a) => a.title?.trim())
+    .map((a) => ({
+      type: a.type,
+      title: a.title.trim(),
+      date: ok(a.date) || todayKey(),
+      endDate: ok(a.endDate) > ok(a.date) ? ok(a.endDate) : '',
+      role: a.role || '',
+      org: a.org || '',
+      result: a.result || '',
+      lesson: '',
+      figures: (a.figures || []).filter((f) => f.label && Number.isFinite(f.n)),
+      links: [],
+      highlight: !!a.highlight,
+      found: { date: a.date || '', type: a.type },
+      warnings: ok(a.date) ? [] : ['ไม่พบวันที่ ใช้วันนี้แทน'],
+      privacy: [],
+      ai: true,
+    }));
+}
+
 /** ให้ AI แยกบันทึกการเรียนรู้เป็นข้อ ๆ พร้อมหมวด → [{ text, cat }] */
 export async function aiLearn(text, { code = cfg().code } = {}) {
   const j = await callAI({ text, mode: 'learn' }, code);

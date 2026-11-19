@@ -53,11 +53,13 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
           <div class="sp-tools">
             ${canRead ? `<button type="button" class="btn btn-outline btn-sm" data-sp="clip">${icon('clipboard')}วางจากคลิปบอร์ด</button>` : ''}
             ${aiReady() ? `<button type="button" class="btn btn-sm btn-ai" data-sp="ai">✨ ให้ AI อ่าน</button>` : ''}
+            <button type="button" class="btn btn-ghost btn-sm" data-sp="pf" title="บันทึกข้อความนี้เป็นผลงานในแฟ้มแทน">🏆 เป็นผลงาน</button>
             <button type="button" class="btn btn-ghost btn-sm" data-sp="sample">${icon('sparkles')}ลองตัวอย่าง</button>
             <button type="button" class="btn btn-ghost btn-sm" data-sp="clear">${icon('x')}ล้าง</button>
             <span class="sp-private">🔒 ประมวลผลในเครื่อง ไม่ส่งข้อความไปที่ไหน</span>
           </div>
         </div>
+        <div class="sp-pf-hint" id="sp-pf-hint" hidden>🏆 ข้อความนี้ดูเหมือน<b>ผลงาน</b> <button type="button" class="btn btn-sm btn-gold" data-sp="pf">บันทึกเข้าแฟ้มผลงานแทน</button></div>
         <div id="sp-results" class="sp-results" aria-live="polite"></div>
       </div>`,
     footer: `<span class="sp-count" id="sp-count"></span><span class="spacer"></span>
@@ -69,6 +71,14 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
       const saveBtn = $('[data-sp="save"]', root);
 
       const parse = () => {
+
+        import('../core/portfolioParse.js').then(({ looksLikeAchievement }) => {
+
+          const h = root.querySelector('#sp-pf-hint');
+
+          if (h) h.hidden = !looksLikeAchievement(ta.value);
+
+        });
         items = parseText(ta.value).map((it) => ({ ...it, include: true }));
         render(true);
       };
@@ -224,6 +234,12 @@ export function openSmartPaste(initial = '', { navigate } = {}) {
             btn.disabled = false;
             btn.classList.remove('loading');
           }
+        }
+        if (act === 'pf') {
+          const text = ta.value;
+          close(true);
+          const { openPortfolioPaste } = await import('./portfolioPaste.js');
+          return openPortfolioPaste(text);
         }
         if (act === 'sample') {
           ta.value = SAMPLE;

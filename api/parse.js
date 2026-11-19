@@ -1,6 +1,6 @@
 // ==========================================================
 // api/parse.js — Vercel serverless function: ให้ Claude อ่านข้อความแล้วแยกเป็น ประชุม / นัดหมาย / งาน
-//   (mode: 'learn' = แยกบันทึกการเรียนรู้เป็นข้อ ๆ พร้อมหมวด)
+//   (mode: 'learn' = แยกบันทึกการเรียนรู้เป็นข้อ ๆ พร้อมหมวด, mode: 'portfolio' = แยกผลงานเข้าแฟ้ม)
 //
 // ตั้งค่าใน Vercel → Project → Settings → Environment Variables
 //   ANTHROPIC_API_KEY  คีย์จาก console.anthropic.com (อยู่บนเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปที่แอป)
@@ -33,6 +33,39 @@ const LEARN_CATS = ['law', 'work', 'people', 'tech', 'health', 'finance', 'life'
 const LearnResult = z.object({
   points: z.array(z.object({ text: z.string(), category: z.enum(LEARN_CATS) })),
 });
+// โหมด "แฟ้มผลงาน": แยกผลงานจากข้อความ
+const PF_TYPES = ['case', 'award', 'training', 'mission', 'project', 'speaker', 'career', 'other'];
+const PortfolioResult = z.object({
+  items: z.array(
+    z.object({
+      type: z.enum(PF_TYPES),
+      title: z.string(),
+      date: z.string(), // YYYY-MM-DD หรือ ""
+      endDate: z.string(),
+      role: z.string(),
+      org: z.string(),
+      result: z.string(),
+      figures: z.array(z.object({ label: z.string(), n: z.number(), unit: z.string() })),
+      highlight: z.boolean(),
+    }),
+  ),
+});
+const PORTFOLIO_SYSTEM = `You help a Thai police officer (investigation bureau) record achievements in a personal work portfolio. The text is something they pasted: a LINE message, a news post, an operation report, an order or a certificate.
+
+Return each distinct achievement in the text, in order. Do not invent achievements or details.
+
+Privacy: never copy personal data of suspects, victims or witnesses (names, ID card numbers, phone numbers, bank account numbers, home addresses, ages). Describe them generically (e.g. "ผู้ต้องหา 5 ราย"). Names and ranks of officers may stay.
+
+Fields:
+- type: "case" (arrests, investigations, seizures), "award" (awards, commendations, certificates of honor), "training" (courses, seminars, study visits completed), "mission" (special operations, security duty, checkpoints, rescue), "project" (initiatives, systems, manuals), "speaker" (lecturing, teaching), "career" (promotion, appointment, transfer), "other".
+- title: short Thai title of the achievement (at most about 80 characters) without dates, places or polite particles.
+- date / endDate: YYYY-MM-DD in the Gregorian calendar; convert Buddhist Era years (2569 = 2026, "69" = 2026). Achievements are usually in the past: resolve relative dates ("เมื่อวาน", "วันศุกร์ที่ผ่านมา") backwards from the current date. endDate only for a date range, else "". date "" if none is given.
+- role: the officer's own role if stated (หัวหน้าชุด, ผู้ร่วมปฏิบัติ, วิทยากร, ผู้เข้าอบรม, ผู้ได้รับรางวัล ...), else "".
+- org: the awarding person or unit, the institute, or the place, short; else "".
+- result: one to three Thai sentences on what was done and the outcome, without personal data.
+- figures: numbers worth totalling, e.g. {label:"จับกุมผู้ต้องหา", n:5, unit:"ราย"}, {label:"ยึดทรัพย์", n:3500000, unit:"บาท"}, {label:"ยาบ้า", n:200000, unit:"เม็ด"}, {label:"ผู้เข้าร่วม", n:300, unit:"คน"}, {label:"ชั่วโมงอบรม", n:60, unit:"ชั่วโมง"}. Write millions out in full. Empty if none.
+- highlight: true for awards and clearly outstanding results, else false.`;
+
 const LEARN_SYSTEM = `You help a Thai police officer (investigation bureau) keep a daily journal of what they learned today.
 
 Split the user's note into separate learning points, in the order they appear. Each point is one lesson, fact, skill or insight. Do not invent points that are not in the note, and drop chit-chat that teaches nothing.
@@ -79,7 +112,7 @@ export default async function handler(req, res) {
   if (text.length > MAX_CHARS) {
     return res.status(413).json({ error: 'too_long', message: `ข้อความยาวเกิน ${MAX_CHARS} ตัวอักษร ลองแบ่งวางทีละส่วน` });
   }
-  const mode = body.mode === 'learn' ? 'learn' : 'items';
+  const mode = ['learn', 'portfolio'].includes(body.mode) ? body.mode : 'items';
   const today = /^\d{4}-\d{2}-\d{2}$/.test(body.today || '') ? body.today : new Date().toISOString().slice(0, 10);
   const weekday = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(`${today}T12:00:00Z`).getUTCDay()];
 
@@ -90,14 +123,19 @@ export default async function handler(req, res) {
       max_tokens: 16000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      output_config: { effort: 'low', format: betaZodOutputFormat(mode === 'learn' ? LearnResult : Result) },
-      system: mode === 'learn' ? LEARN_SYSTEM : SYSTEM,
+      output_config: {
+        effort: 'low',
+        format: betaZodOutputFormat(mode === 'learn' ? LearnResult : mode === 'portfolio' ? PortfolioResult : Result),
+      },
+      system: mode === 'learn' ? LEARN_SYSTEM : mode === 'portfolio' ? PORTFOLIO_SYSTEM : SYSTEM,
       messages: [
         {
           role: 'user',
           content:
             mode === 'learn'
               ? `<note>\n${text}\n</note>`
+              : mode === 'portfolio'
+              ? `Current date: ${today} (${weekday}), time zone Asia/Bangkok.\n\n<text>\n${text}\n</text>`
               : `Current date: ${today} (${weekday}), time zone Asia/Bangkok.\n\n<message>\n${text}\n</message>`,
         },
       ],
@@ -109,6 +147,7 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'incomplete', message: 'AI ตอบไม่ครบ ลองแบ่งข้อความให้สั้นลง' });
     }
     if (mode === 'learn') return res.status(200).json({ points: response.parsed_output.points, model: response.model });
+    if (mode === 'portfolio') return res.status(200).json({ achievements: response.parsed_output.items, model: response.model });
     return res.status(200).json({ items: response.parsed_output.items, model: response.model });
   } catch (error) {
     if (error instanceof Anthropic.AuthenticationError) {

@@ -74,7 +74,7 @@ function makeDate(y, m, d, now) {
 }
 
 // ---------------- dates ----------------
-function findDates(s, now) {
+export function findDates(s, now) {
   const out = [];
   const add = (m, date, label, weak = false) => {
     if (!date) return;
@@ -436,3 +436,5 @@ function parseSegment(seg, now, whole) {
     warnings,
   };
 }
+
+export { MONTH_RE, monthIndex, fixYear };
