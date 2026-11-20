@@ -169,7 +169,14 @@ async function setup(body) {
   try {
     page = await notion(`/pages/${id}`);
   } catch (e) {
-    if (e.status === 404) throw Object.assign(new Error('เข้าหน้านี้ไม่ได้: เปิดหน้านี้ใน Notion → ⋯ → Connections → เพิ่ม Integration ของคุณก่อน'), { status: 404 });
+    if (e.status === 404 || e.status === 400) {
+      // ลิงก์ที่ได้อาจเป็นตาราง (database) ไม่ใช่หน้า
+      const isDb = await notion(`/databases/${id}`).then(() => true, () => false);
+      if (isDb) {
+        throw Object.assign(new Error('ลิงก์นี้เป็นตาราง (database) ไม่ใช่หน้า: สร้างหน้าว่างใหม่ใน Notion (เช่น Life Planner) แล้วใช้ลิงก์ของหน้านั้นแทน'), { status: 400 });
+      }
+      throw Object.assign(new Error('เข้าหน้านี้ไม่ได้: เปิดหน้านี้ใน Notion → ⋯ → Connections → เพิ่ม Integration ของคุณก่อน'), { status: 404 });
+    }
     throw e;
   }
   const dbs = {};
