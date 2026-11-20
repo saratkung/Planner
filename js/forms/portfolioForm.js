@@ -324,6 +324,7 @@ export function openPortfolioDetail(id) {
         ${p.files.length || p.links.length ? `<section><h4 class="section-title">📎 หลักฐาน</h4>
           <div class="pf-files">${p.files.map((f) => fileChip(f)).join('')}</div>
           ${p.links.length ? `<ul class="pf-links">${p.links.map((u) => `<li><a href="${esc(safeUrl(u))}" target="_blank" rel="noopener">${icon('link')}${esc(u)}</a></li>`).join('')}</ul>` : ''}</section>` : ''}
+        ${p.notion?.id ? `<p class="pfd-src"><a href="https://www.notion.so/${esc(p.notion.id.replace(/-/g, ''))}" target="_blank" rel="noopener">🗒️ เปิดใน Notion</a></p>` : ''}
         ${src ? `<p class="muted pfd-src">ที่มา: ${p.source.col === 'events' ? '👥 ประชุม' : p.source.col === 'goals' ? '🎯 เป้าหมาย' : '💡 การเรียนรู้'} “${esc(src.title || src.text)}”</p>` : ''}
       </article>`,
     footer: `<button class="icon-btn" type="button" data-pfd="copy" title="คัดลอกข้อความ" aria-label="คัดลอกข้อความ">${icon('copy')}</button>

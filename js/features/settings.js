@@ -9,6 +9,7 @@ import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
 import { setAI, aiParse } from '../sync/ai.js';
+import { notionSectionHTML, bindNotionSection } from '../sync/notionPanel.js';
 import { setFocusCfg } from '../ui/focus.js';
 import { setupPin, disablePin, verifyPin, lockNow, setLockAfter, lockSupported } from '../ui/lock.js';
 import { enableNotify, disableNotify, setNotifyOption, testNotify, notifyPermission, notifySupported, isIOS } from '../ui/notify.js';
@@ -139,6 +140,7 @@ function lockSectionHTML() {
 export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
   let offInstall = null;
   let offGcal = null;
+  let offNotion = null;
   const s = store.state.settings;
   const body = `
     <div class="form-grid">
@@ -147,6 +149,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       ${notifySectionHTML()}
       ${focusSectionHTML()}
       ${aiSectionHTML()}
+      ${notionSectionHTML()}
       ${lockSectionHTML()}
       <div class="field">
         <label for="st-name">ชื่อของคุณ</label>
@@ -212,6 +215,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
     onClose: () => {
       offInstall?.();
       offGcal?.();
+      offNotion?.();
     },
     onMount(root, close) {
       const inst = $('#st-install', root);
@@ -226,6 +230,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       });
       if (focusInstall) inst.firstElementChild.classList.add('pop');
       offGcal = bindGcalSection(root, { closeSettings: close });
+      offNotion = bindNotionSection(root);
       $('#lk-after', root)?.addEventListener('change', (e) => setLockAfter(e.target.value));
       $('#nt-lead', root)?.addEventListener('change', (e) => setNotifyOption({ lead: Number(e.target.value) }));
       $('#ai-on', root)?.addEventListener('change', (e) => setAI({ enabled: e.target.checked }));

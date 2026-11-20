@@ -25,9 +25,12 @@ const defaultSettings = () => ({
   gcal: defaultGcal(), backup: defaultBackup(), lock: defaultLock(), notify: defaultNotify(),
   ai: { enabled: false, code: '' }, // AI ช่วยอ่านข้อความ (รหัสเก็บเฉพาะเครื่องนี้)
   profile: { rank: '', fullName: '', position: '', unit: '' }, // ใช้ในรายงานแฟ้มผลงาน
+  // Notion: ตั้งค่าร่วมทุกเครื่อง (หน้าและตารางที่ใช้) / notionLocal: รหัสใช้งานของเครื่องนี้
+  notion: { enabled: false, pageId: '', pageUrl: '', title: '', dbs: {}, auto: true, archivedAt: 0, kinds: { portfolio: true, learnings: true, meetings: true, tasks: true } },
+  notionLocal: { code: '', lastSync: null, lastError: '' },
 });
 // ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
-const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify', 'ai', 'focus'];
+const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify', 'ai', 'focus', 'notionLocal'];
 
 let state = load();
 const listeners = new Set();
@@ -68,6 +71,9 @@ function normalize(data) {
   s.settings.lock = { ...defaultLock(), ...(s.settings.lock || {}) };
   s.settings.notify = { ...defaultNotify(), ...(s.settings.notify || {}) };
   s.settings.profile = { ...defaultSettings().profile, ...(s.settings.profile || {}) };
+  s.settings.notion = { ...defaultSettings().notion, ...(s.settings.notion || {}) };
+  s.settings.notion.kinds = { ...defaultSettings().notion.kinds, ...(s.settings.notion.kinds || {}) };
+  s.settings.notionLocal = { ...defaultSettings().notionLocal, ...(s.settings.notionLocal || {}) };
   s.portfolio.forEach((p) => {
     if (!Array.isArray(p.figures)) p.figures = [];
     if (!Array.isArray(p.files)) p.files = [];
@@ -88,7 +94,7 @@ function normalize(data) {
 
 // ---------- ติดตามการเปลี่ยนแปลง (สำหรับซิงก์ระหว่างเครื่อง) ----------
 // เทียบกับครั้งก่อน: รายการที่เปลี่ยนได้ updatedAt ใหม่, รายการที่หายไปถูกบันทึกว่า "ลบ"
-const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd', 'profile'];
+const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd', 'profile', 'notion'];
 let sigs = null;
 const sigOf = (o) => {
   const { updatedAt, ...rest } = o || {};
@@ -257,6 +263,7 @@ export const store = {
     const settings = { ...state.settings };
     delete settings.lock; // ไม่ส่ง PIN ออกไปกับไฟล์สำรอง
     delete settings.ai; // รหัส AI เป็นของเครื่องนี้
+    delete settings.notionLocal; // รหัสใช้งาน Notion เป็นของเครื่องนี้
     return JSON.stringify({ ...state, settings, exportedAt: new Date().toISOString() }, null, 2);
   },
 

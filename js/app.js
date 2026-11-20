@@ -19,6 +19,7 @@ import { setupNotify } from './ui/notify.js';
 import { setupFocus, startFocus, focusActive } from './ui/focus.js';
 import { setupGcal, syncNow, gcalStatus, onGcalChange } from './sync/gcal.js';
 import { setupDrive, syncData } from './sync/drive.js';
+import { setupNotion, syncNotion, notionReady } from './sync/notion.js';
 import { syncSummary, timeAgo } from './sync/gcalPanel.js';
 import { toast } from './ui/toast.js';
 
@@ -307,7 +308,16 @@ async function syncAll() {
     let data = null;
     if (store.state.settings.backup.auto) data = await syncData({ interactive: true });
     const n = (cal ? cal.added + cal.updated + cal.removed : 0) + (data ? data.added + data.updated + data.removed : 0);
-    toast(n ? `ซิงก์แล้ว: อัปเดต ${n} รายการ` : 'ซิงก์แล้ว ข้อมูลตรงกันทุกเครื่อง', { icon: '🔄' });
+    let extra = '';
+    if (notionReady()) {
+      try {
+        const r = await syncNotion({ manual: true });
+        if (r.sent) extra = ` · ส่งไป Notion ${r.sent} รายการ`;
+      } catch (e) {
+        extra = ` · Notion: ${e.message}`;
+      }
+    }
+    toast((n ? `ซิงก์แล้ว: อัปเดต ${n} รายการ` : 'ซิงก์แล้ว ข้อมูลตรงกันทุกเครื่อง') + extra, { icon: '🔄' });
   } catch (e) {
     toast(e.message, { icon: '⚠️', action: 'ตั้งค่า', onAction: () => openSettings({ focusGcal: true }) });
   }
@@ -339,6 +349,7 @@ function init() {
   setupSmartPaste();
   setupNotify();
   setupFocus();
+  setupNotion();
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);
