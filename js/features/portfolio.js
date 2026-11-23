@@ -11,6 +11,7 @@ import { emptyState, segmented, bindSegmented, moveSegIndicator } from '../ui/wi
 import { openPortfolioForm, openPortfolioDetail } from '../forms/portfolioForm.js';
 import { openPortfolioReport } from '../forms/portfolioReport.js';
 import { openPortfolioPaste } from '../forms/portfolioPaste.js';
+import { isPhoto, bestPhotoURL } from '../core/photoStore.js';
 
 const VIEW_KEY = 'planner.pfView';
 // ไอคอนของตัวเลขผลงาน (ตามชื่อ/หน่วย)
@@ -29,9 +30,10 @@ const shortDate = (k) => {
 function card(p, track) {
   const t = pfType(p.type);
   const { cls, vars } = track.attrs(p.id);
-  const thumbs = p.files.filter((f) => f.thumb).slice(0, 3);
-  const more = p.files.length + p.links.length - thumbs.length;
-  return `<article class="card pf-card card-hover${p.highlight ? ' hl' : ''}${cls}" style="${vars}--c:${t.color}" data-pf="${p.id}" tabindex="0" role="button" aria-label="${esc(p.title)}">
+  const photos = p.files.filter((f) => f.thumb && isPhoto(f));
+  const more = p.files.length + p.links.length - photos.length;
+  return `<article class="card pf-card card-hover${p.highlight ? ' hl' : ''}${photos.length ? ' has-cover' : ''}${cls}" style="${vars}--c:${t.color}" data-pf="${p.id}" tabindex="0" role="button" aria-label="${esc(p.title)}">
+    ${photos.length ? `<div class="pf-cover"><img src="${esc(photos[0].thumb)}" alt="" loading="lazy" data-cover="${p.id}" />${photos.length > 1 ? `<span class="pf-cover-n">${icon('image')}${photos.length}</span>` : ''}</div>` : ''}
     <div class="pf-card-top">
       ${tile(t.icon, t.color, 'pf-badge')}
       <div class="pf-card-meta"><span class="pf-type">${esc(t.label)}</span><span class="muted">${shortDate(p.date)}${p.endDate && p.endDate !== p.date ? ` – ${shortDate(p.endDate)}` : ''}</span></div>
@@ -41,7 +43,7 @@ function card(p, track) {
     ${p.role || p.org ? `<p class="pf-role">${p.role ? `👤 ${esc(p.role)}` : ''}${p.role && p.org ? ' · ' : ''}${p.org ? esc(p.org) : ''}</p>` : ''}
     ${p.result ? `<p class="pf-result">${esc(p.result)}</p>` : ''}
     ${p.figures.length ? `<div class="pf-figpills">${p.figures.slice(0, 3).map((f) => `<span class="pf-figpill"><b>${figEmoji(f)} ${esc(withUnit(f.n, f.unit))}</b>${esc(f.label)}</span>`).join('')}</div>` : ''}
-    ${thumbs.length || more > 0 ? `<div class="pf-thumbs">${thumbs.map((f) => `<img src="${esc(f.thumb)}" alt="" loading="lazy" />`).join('')}${more > 0 ? `<span class="pf-more">📎 ${more}</span>` : ''}</div>` : ''}
+    ${more > 0 ? `<div class="pf-thumbs"><span class="pf-more">${icon('link')} เอกสาร/ลิงก์ ${more}</span></div>` : ''}
   </article>`;
 }
 
@@ -200,6 +202,12 @@ export default {
         const rest = list.filter((p) => !p.highlight);
         host.innerHTML = `${hl.length && !onlyHl ? `<h4 class="section-title pf-sec">⭐ ผลงานเด่น <span class="count">${hl.length}</span></h4><div class="pf-grid">${hl.map((p) => card(p, track)).join('')}</div>` : ''}
           ${rest.length || onlyHl ? `${hl.length && !onlyHl ? `<h4 class="section-title pf-sec">🗂️ ผลงานทั้งหมด <span class="count">${rest.length}</span></h4>` : ''}<div class="pf-grid">${(onlyHl ? list : rest).map((p) => card(p, track)).join('')}</div>` : ''}`;
+        host.querySelectorAll('[data-cover]').forEach(async (im) => {
+          const it = store.find('portfolio', im.dataset.cover);
+          const f = it?.files.find((x) => x.thumb && isPhoto(x));
+          const url = f && (await bestPhotoURL(f, { fromDrive: false }));
+          if (url) im.src = url;
+        });
       }
     };
 

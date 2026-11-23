@@ -2091,3 +2091,84 @@ svg.pf-star { width: 22px; height: 22px; margin-left: auto; flex: none; filter: 
 .chip.active .itile.chipi { box-shadow: 0 0 0 2px var(--surface), 0 3px 7px -2px color-mix(in srgb, var(--c) 80%, transparent); }
 .chip:not(.active) .itile.chipi { filter: saturate(0.9); }
 .section-title .itile.chipi { margin-left: 0; }
+
+/* ==========================================================
+   ภาพประกอบ: แกลเลอรีในหน้ารายละเอียด / รูปปกการ์ด / ดูเต็มจอ
+   ========================================================== */
+.pfd-gal-sec .section-title { display: flex; align-items: center; gap: 6px; }
+.pfd-hint { margin-left: auto; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.pfd-gal { display: grid; gap: 6px; border-radius: 16px; overflow: hidden; }
+.pfd-gal.n1 { grid-template-columns: 1fr; }
+.pfd-gal.n1 .pfd-ph { aspect-ratio: 16 / 10; }
+.pfd-gal.n2 { grid-template-columns: 1fr 1fr; }
+.pfd-gal.n2 .pfd-ph { aspect-ratio: 4 / 3; }
+.pfd-gal.n3, .pfd-gal.n4, .pfd-gal.n5 { grid-template-columns: 2fr 1fr; grid-auto-rows: 120px; }
+.pfd-gal.n3 .pfd-ph:first-child { grid-row: span 2; }
+.pfd-gal.n4 { grid-template-columns: 2fr 1fr 1fr; }
+.pfd-gal.n4 .pfd-ph:first-child { grid-row: span 2; }
+.pfd-gal.n4 .pfd-ph:nth-child(4) { grid-column: span 2; }
+.pfd-gal.n5 { grid-template-columns: 2fr 1fr 1fr; }
+.pfd-gal.n5 .pfd-ph:first-child { grid-row: span 2; }
+.pfd-ph {
+  position: relative; padding: 0; border: 0; overflow: hidden; cursor: zoom-in; background: var(--surface-2);
+  animation: popIn 0.45s var(--spring) both; animation-delay: calc(var(--i) * 60ms);
+}
+.pfd-ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s var(--ease), filter 0.4s; }
+.pfd-ph img.blur { filter: blur(1.5px) saturate(0.95); }
+.pfd-ph:hover img { transform: scale(1.05); }
+.pfd-ph::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); pointer-events: none; }
+.pfd-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(20, 16, 50, 0.55); color: #fff; font: 700 22px var(--font-head); backdrop-filter: blur(2px); }
+
+.pf-card.has-cover { padding-top: 0; }
+.pf-card.has-cover::before { z-index: 2; }
+.pf-cover { position: relative; margin: 0 -18px 4px; height: 150px; overflow: hidden; background: var(--surface-2); }
+.pf-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--ease); }
+.pf-card:hover .pf-cover img { transform: scale(1.06); }
+.pf-cover::after { content: ''; position: absolute; inset: 55% 0 0; background: linear-gradient(transparent, color-mix(in srgb, var(--surface) 55%, transparent)); pointer-events: none; }
+.pf-cover-n { position: absolute; right: 10px; bottom: 10px; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; background: rgba(15, 12, 40, 0.62); color: #fff; font-size: 12px; font-weight: 600; backdrop-filter: blur(4px); }
+.pf-cover-n svg { width: 13px; height: 13px; }
+.pf-more { display: inline-flex; align-items: center; gap: 4px; }
+.pf-more svg { width: 13px; height: 13px; }
+
+/* ดูรูปเต็มจอ */
+.lb {
+  position: fixed; inset: 0; z-index: 400; display: flex; flex-direction: column;
+  background: rgba(8, 6, 24, 0.97); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; opacity: 0; transition: opacity 0.22s;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.lb.show { opacity: 1; }
+.lb.out { opacity: 0; }
+.lb-top { display: flex; align-items: center; gap: 8px; padding: 12px 14px; }
+.lb-count { font-size: 14px; font-weight: 600; opacity: 0.85; }
+.lb-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; min-width: 40px; justify-content: center; padding: 0 12px; border-radius: 12px; border: 0; background: rgba(255, 255, 255, 0.12); color: #fff; font-size: 13px; text-decoration: none; }
+.lb-btn:hover { background: rgba(255, 255, 255, 0.2); }
+.lb-btn svg { width: 18px; height: 18px; }
+.lb-stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0 56px; touch-action: pan-y; }
+.lb-fig { position: relative; margin: 0; max-width: 100%; max-height: 100%; display: grid; place-items: center; }
+.lb-fig img { max-width: 100%; max-height: calc(100vh - 190px); object-fit: contain; border-radius: 10px; box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8); user-select: none; transition: filter 0.3s; }
+.lb-fig img.blur { filter: blur(2px); }
+.lb-fig img.in { animation: lbIn 0.35s var(--ease) both; }
+.lb-fig img.from-right { animation-name: lbRight; }
+.lb-fig img.from-left { animation-name: lbLeft; }
+@keyframes lbIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes lbRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes lbLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+.lb-spin { position: absolute; width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; animation: spin 0.8s linear infinite; }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255, 255, 255, 0.14); color: #fff; }
+.lb-nav:hover { background: rgba(255, 255, 255, 0.26); }
+.lb-nav svg { width: 22px; height: 22px; }
+.lb-nav.prev { left: 8px; }
+.lb-nav.next { right: 8px; }
+.lb-cap { padding: 10px 18px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.lb-cap span { font-size: 12px; opacity: 0.6; }
+.lb-strip { display: flex; gap: 6px; padding: 8px 14px 14px; overflow-x: auto; justify-content: center; scrollbar-width: none; }
+.lb-strip button { flex: none; width: 52px; height: 52px; padding: 0; border-radius: 10px; overflow: hidden; border: 2px solid transparent; opacity: 0.55; background: none; transition: opacity 0.2s, border-color 0.2s, transform 0.2s; }
+.lb-strip button.on { opacity: 1; border-color: #fff; transform: translateY(-2px); }
+.lb-strip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 760px) {
+  .lb-stage { padding: 0 6px; }
+  .lb-nav { display: none; }
+  .lb-fig img { max-height: calc(100vh - 210px); }
+  .pfd-gal.n3, .pfd-gal.n4, .pfd-gal.n5 { grid-auto-rows: 96px; }
+  .pf-cover { height: 170px; }
+}

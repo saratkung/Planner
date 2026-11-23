@@ -350,6 +350,16 @@ function init() {
   setupNotify();
   setupFocus();
   setupNotion();
+  // ล้างรูปชัดในเครื่องที่ไม่มีผลงานไหนใช้แล้ว (หลังเปิดแอปสักพัก)
+  setTimeout(async () => {
+    const { cleanupPhotos } = await import('./core/photoStore.js');
+    const used = new Set();
+    (store.state.portfolio || []).forEach((p) => (p.files || []).forEach((f) => {
+      if (f.id) used.add(`d:${f.id}`);
+      if (f.pid) used.add(`l:${f.pid}`);
+    }));
+    cleanupPhotos(used);
+  }, 20000);
   setupSyncButton();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn);

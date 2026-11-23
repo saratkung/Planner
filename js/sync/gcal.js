@@ -95,7 +95,7 @@ export async function ensureToken({ interactive = false, scope = CAL_SCOPE } = {
 }
 
 /** fetch ไปยัง Google API พร้อม token (ใช้ร่วมกับ Drive) */
-export async function googleFetch(url, { method = 'GET', headers = {}, body, json = true } = {}) {
+export async function googleFetch(url, { method = 'GET', headers = {}, body, json = true, as } = {}) {
   if (!hasToken()) {
     const e = new Error('ต้องเข้าสู่ระบบ Google อีกครั้ง');
     e.needsAuth = true;
@@ -131,6 +131,7 @@ export async function googleFetch(url, { method = 'GET', headers = {}, body, jso
     throw new Error(msg);
   }
   if (res.status === 204) return null;
+  if (as === 'blob') return res.blob();
   return json ? res.json() : res.text();
 }
 const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Bangkok';

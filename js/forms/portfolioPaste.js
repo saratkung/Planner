@@ -14,6 +14,7 @@ import { readDocx } from '../core/docx.js';
 import { docxToDrafts } from '../core/portfolioImport.js';
 import { makeThumb } from './portfolioForm.js';
 import { uploadAttachment, canAttach } from '../sync/drive.js';
+import { putPhoto, makePreview } from '../core/photoStore.js';
 
 const SAMPLE = `สรุปผลการปฏิบัติเดือนนี้
 1. ชุดสืบสวนจับกุมเครือข่ายยาเสพติด ผู้ต้องหา 5 ราย ของกลางยาบ้า 200,000 เม็ด ยึดทรัพย์ 3.5 ล้านบาท เมื่อวันที่ 12 ต.ค. 69 ณ อ.เมือง จ.เชียงใหม่ (เป็นหัวหน้าชุด)
@@ -278,21 +279,30 @@ export function openPortfolioPaste(initial = '') {
           if (!pick.length || busy) return;
           const now = Date.now();
           const upload = !!$('#pp-upload', root)?.checked;
-          const made = [];
+          // เตรียมรูป (ตั้งชื่อตามผลงาน) และเก็บรูปชัดไว้ในเครื่องก่อน แล้วค่อยบันทึก (การ์ดจะได้แสดงรูปชัดทันที)
+          const prepared = pick.map((d) => {
+            let base = d.title.trim().replace(/[\\/:*?"<>|…“”]+/g, '');
+            if (base.length > 50) base = base.slice(0, 50).lastIndexOf(' ') > 25 ? base.slice(0, base.slice(0, 50).lastIndexOf(' ')) : base.slice(0, 50);
+            base = base.trim() || 'ผลงาน';
+            const photos = (d.photos || []).map((ph, n) => {
+              const ext = (ph.name.split('.').pop() || 'jpg').toLowerCase();
+              const name = d.photos.length > 1 ? `${base} (${n + 1}).${ext}` : `${base}.${ext}`;
+              return { ...ph, name, pid: uid(), file: new File([ph.file], name, { type: ph.file.type }), thumb: docx?.thumbs.get(ph.file) || '' };
+            });
+            return { d, id: uid(), photos };
+          });
+          const total = prepared.reduce((a, m) => a + m.photos.length, 0);
+          if (total) {
+            busy = true;
+            count();
+            saveBtn.querySelector('span').textContent = 'กำลังเก็บรูป…';
+            for (const m of prepared) for (const ph of m.photos) await putPhoto(`l:${ph.pid}`, await makePreview(ph.file));
+            busy = false;
+          }
+          const made = prepared.map((m) => ({ id: m.id, photos: m.photos }));
           store.batch((state) => {
-            pick.forEach((d, k) => {
-              const id = uid();
-              // ตั้งชื่อรูปตามผลงาน เช่น "ปฏิบัติหน้าที่ซุ้มกระบี่… (1).jpg" (หาใน Drive ง่าย)
-              let base = d.title.trim().replace(/[\\/:*?"<>|…“”]+/g, '');
-              if (base.length > 50) base = base.slice(0, 50).lastIndexOf(' ') > 25 ? base.slice(0, base.slice(0, 50).lastIndexOf(' ')) : base.slice(0, 50);
-              base = base.trim() || 'ผลงาน';
-              const photos = (d.photos || []).map((ph, n) => {
-                const ext = (ph.name.split('.').pop() || 'jpg').toLowerCase();
-                const name = d.photos.length > 1 ? `${base} (${n + 1}).${ext}` : `${base}.${ext}`;
-                return { ...ph, name, file: new File([ph.file], name, { type: ph.file.type }), thumb: docx?.thumbs.get(ph.file) || '' };
-              });
-              const files = photos.map((ph) => ({ name: ph.name, mime: ph.file.type, thumb: ph.thumb, link: '', id: '' }));
-              made.push({ id, photos });
+            prepared.forEach(({ d, id, photos }, k) => {
+              const files = photos.map((ph) => ({ name: ph.name, mime: ph.file.type, thumb: ph.thumb, pid: ph.pid, link: '', id: '' }));
               state.portfolio.push({
                 id, type: d.type, title: d.title.trim().slice(0, 140), date: d.date || todayKey(), endDate: d.endDate || '',
                 role: d.role.trim(), org: d.org.trim(), result: d.result.trim(), lesson: '', figures: d.figures,
@@ -300,7 +310,6 @@ export function openPortfolioPaste(initial = '') {
               });
             });
           });
-          const total = made.reduce((a, m) => a + m.photos.length, 0);
           if (upload && total) {
             busy = true;
             count();

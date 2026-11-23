@@ -11,6 +11,9 @@ import { toast } from '../ui/toast.js';
 import { icon, tile, chipIcon } from '../ui/icons.js';
 import { confetti } from '../ui/confetti.js';
 import { uploadAttachment, canAttach } from '../sync/drive.js';
+import { putPhoto, makePreview, isPhoto, bestPhotoURL } from '../core/photoStore.js';
+import { openLightbox } from '../ui/lightbox.js';
+import { uid } from '../core/utils.js';
 
 const isImage = (f) => /^image\//.test(f.mime || '');
 const fileIcon = (f) => (isImage(f) ? '🖼️' : /pdf/.test(f.mime || '') ? '📄' : /word|document/.test(f.mime || '') ? '📝' : '📎');
@@ -96,9 +99,9 @@ export function openPortfolioForm(item = null, prefill = {}) {
         <div class="field"><label>หลักฐาน / ไฟล์แนบ</label>
           <div class="pf-files" id="pf-files"></div>
           <div class="pf-attach">
-            <label class="btn btn-outline btn-sm pf-upload${canAttach() ? '' : ' disabled'}">${icon('upload')}แนบรูป / ไฟล์
-              <input type="file" id="pf-file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" ${canAttach() ? '' : 'disabled'} hidden /></label>
-            <span class="muted pf-attach-hint">${canAttach() ? 'เก็บใน Google Drive ของคุณ (โฟลเดอร์ “Life Planner – แฟ้มผลงาน”)' : 'เชื่อม Google ในตั้งค่าก่อน จึงจะแนบไฟล์ได้ · หรือวางลิงก์ด้านล่าง'}</span>
+            <label class="btn btn-outline btn-sm pf-upload">${icon('upload')}${canAttach() ? 'แนบรูป / ไฟล์' : 'แนบรูป'}
+              <input type="file" id="pf-file" multiple accept="${canAttach() ? 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx' : 'image/*'}" hidden /></label>
+            <span class="muted pf-attach-hint">${canAttach() ? 'เก็บใน Google Drive ของคุณ (โฟลเดอร์ “Life Planner – แฟ้มผลงาน”) และเก็บรูปชัดไว้ในเครื่องนี้' : 'รูปเก็บไว้ในเครื่องนี้ · เชื่อม Google ในตั้งค่า เพื่อเก็บใน Drive และแนบ PDF/เอกสารได้'}</span>
           </div>
           <div class="pf-linkadd"><input class="input" id="pf-link" type="url" placeholder="วางลิงก์ เช่น ข่าว หรือไฟล์ใน Drive แล้วกด Enter" />
             <button type="button" class="btn btn-ghost btn-sm" data-addlink>${icon('link')}เพิ่มลิงก์</button></div>
@@ -195,8 +198,15 @@ export function openPortfolioForm(item = null, prefill = {}) {
           uploading++;
           renderFiles();
           try {
-            const [up, thumb] = await Promise.all([uploadAttachment(file), makeThumb(file)]);
-            Object.assign(tmp, up, { thumb, uploading: false });
+            const image = /^image\//.test(file.type);
+            if (!canAttach() && !image) throw new Error('ยังไม่ได้เชื่อม Google แนบได้เฉพาะรูป');
+            const pid = image ? uid() : '';
+            const [up, thumb] = await Promise.all([
+              canAttach() ? uploadAttachment(file) : Promise.resolve({ name: file.name, mime: file.type, link: '', id: '' }),
+              makeThumb(file, 240, 0.68),
+              image ? makePreview(file).then((b) => putPhoto(`l:${pid}`, b)) : null,
+            ]);
+            Object.assign(tmp, up, { thumb, pid, uploading: false });
             delete tmp.uploading;
           } catch (err) {
             files = files.filter((f) => f !== tmp);
@@ -243,9 +253,6 @@ export function openPortfolioForm(item = null, prefill = {}) {
         if (rl) {
           links.splice(Number(rl.dataset.rmlink), 1);
           return renderLinks();
-        }
-        if (e.target.closest('.pf-upload.disabled')) {
-          return toast('เชื่อม Google ในตั้งค่าก่อน จึงจะแนบไฟล์ได้', { icon: '🔗' });
         }
         if (e.target.closest('[data-del]')) {
           close();
@@ -304,9 +311,23 @@ export function openPortfolioDetail(id) {
   if (!p) return;
   const t = pfType(p.type);
   const src = p.source && store.find(p.source.col, p.source.id);
+  const photos = p.files.filter(isPhoto);
+  const docs = p.files.filter((f) => !isPhoto(f));
+  const SHOW = 5;
+  const gallery = photos.length
+    ? `<section class="pfd-gal-sec"><h4 class="section-title">${icon('image')} ภาพประกอบ <span class="count">${photos.length}</span><span class="pfd-hint">แตะเพื่อดูเต็มจอ</span></h4>
+      <div class="pfd-gal n${Math.min(photos.length, SHOW)}">${photos
+        .slice(0, SHOW)
+        .map(
+          (f, k) => `<button type="button" class="pfd-ph" data-ph="${k}" style="--i:${k}" aria-label="ดูรูปที่ ${k + 1}">
+            <img src="${esc(f.thumb || '')}" alt="" class="blur" data-pk="${k}" />
+            ${k === SHOW - 1 && photos.length > SHOW ? `<span class="pfd-more">+${photos.length - SHOW}</span>` : ''}</button>`,
+        )
+        .join('')}</div></section>`
+    : '';
   openModal({
     title: `${t.emoji} ${esc(t.label)}`,
-    size: 600,
+    size: photos.length ? 680 : 600,
     body: `
       <article class="pfd" style="--c:${t.color}">
         <div class="pfd-hero">
@@ -318,11 +339,12 @@ export function openPortfolioDetail(id) {
           ${p.role ? `<span class="tag accent">👤 ${esc(p.role)}</span>` : ''}
           ${p.org ? `<span class="tag">🏢 ${esc(p.org)}</span>` : ''}
         </div>
+        ${gallery}
         ${p.figures.length ? `<div class="pf-figpills">${p.figures.map((f) => `<span class="pf-figpill"><b>${esc(withUnit(f.n, f.unit))}</b>${esc(f.label)}</span>`).join('')}</div>` : ''}
         ${p.result ? `<section><h4 class="section-title">${icon('note')} ผลการปฏิบัติ</h4><p class="pfd-text">${esc(p.result)}</p></section>` : ''}
         ${p.lesson ? `<section><h4 class="section-title">💡 บทเรียนที่ได้</h4><p class="pfd-text">${esc(p.lesson)}</p></section>` : ''}
-        ${p.files.length || p.links.length ? `<section><h4 class="section-title">📎 หลักฐาน</h4>
-          <div class="pf-files">${p.files.map((f) => fileChip(f)).join('')}</div>
+        ${docs.length || p.links.length ? `<section><h4 class="section-title">📎 เอกสาร / ลิงก์</h4>
+          <div class="pf-files">${docs.map((f) => fileChip(f)).join('')}</div>
           ${p.links.length ? `<ul class="pf-links">${p.links.map((u) => `<li><a href="${esc(safeUrl(u))}" target="_blank" rel="noopener">${icon('link')}${esc(u)}</a></li>`).join('')}</ul>` : ''}</section>` : ''}
         ${p.notion?.id ? `<p class="pfd-src"><a href="https://www.notion.so/${esc(p.notion.id.replace(/-/g, ''))}" target="_blank" rel="noopener">🗒️ เปิดใน Notion</a></p>` : ''}
         ${src ? `<p class="muted pfd-src">ที่มา: ${p.source.col === 'events' ? '👥 ประชุม' : p.source.col === 'goals' ? '🎯 เป้าหมาย' : '💡 การเรียนรู้'} “${esc(src.title || src.text)}”</p>` : ''}
@@ -332,7 +354,15 @@ export function openPortfolioDetail(id) {
       <span class="spacer"></span>
       <button class="btn btn-outline btn-sm" type="button" data-pfd="edit">${icon('edit')}แก้ไข</button>`,
     onMount(root, close) {
+      // เปลี่ยนรูปย่อเป็นรูปชัด (ในเครื่อง หรือดึงจาก Drive ถ้าเข้าสู่ระบบอยู่)
+      root.querySelectorAll('[data-pk]').forEach(async (im) => {
+        const url = await bestPhotoURL(photos[Number(im.dataset.pk)]);
+        if (url) im.src = url;
+        im.classList.remove('blur');
+      });
       root.addEventListener('click', async (e) => {
+        const ph = e.target.closest('[data-ph]');
+        if (ph) return openLightbox(photos.map((f) => ({ file: f, title: p.title })), Number(ph.dataset.ph));
         const act = e.target.closest('[data-pfd]')?.dataset.pfd;
         if (act === 'edit') {
           close(true);
