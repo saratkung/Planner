@@ -36,7 +36,7 @@ export function reportHTML(list, range, { links = true } = {}) {
       <table><thead><tr><th class="c-no">ที่</th><th class="c-date">วัน เดือน ปี</th><th>ผลงาน / ผลการปฏิบัติ</th><th class="c-role">บทบาท</th>${links ? '<th class="c-ev">หลักฐาน</th>' : ''}</tr></thead>
       <tbody>${items
         .map((p, i) => {
-          const ev = [...p.files.map((f) => `<a href="${esc(f.link)}">${esc(f.name)}</a>`), ...p.links.map((u) => `<a href="${esc(u)}">ลิงก์ ${p.links.indexOf(u) + 1}</a>`)];
+          const ev = [...p.files.map((f) => (f.link ? `<a href="${esc(f.link)}">${esc(f.name)}</a>` : `รูป ${esc(f.name)}`)), ...p.links.map((u) => `<a href="${esc(u)}">ลิงก์ ${p.links.indexOf(u) + 1}</a>`)];
           return `<tr><td class="c-no">${i + 1}</td>
             <td class="c-date">${short(p.date)}${p.endDate && p.endDate !== p.date ? `<br>– ${short(p.endDate)}` : ''}</td>
             <td><b>${p.highlight ? '★ ' : ''}${esc(p.title)}</b>${p.org ? `<div class="sub">${esc(p.org)}</div>` : ''}

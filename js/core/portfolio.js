@@ -11,6 +11,7 @@ export const PF_TYPES = [
   { id: 'mission', label: 'ภารกิจพิเศษ', short: 'ภารกิจ', emoji: '🎯', color: '#e11d48' },
   { id: 'project', label: 'โครงการ / งานริเริ่ม', short: 'โครงการ', emoji: '🛠️', color: '#10b981' },
   { id: 'speaker', label: 'วิทยากร / ถ่ายทอดความรู้', short: 'วิทยากร', emoji: '🎤', color: '#8b5cf6' },
+  { id: 'volunteer', label: 'กิจกรรม / จิตอาสา', short: 'กิจกรรม', emoji: '🤝', color: '#14b8a6' },
   { id: 'career', label: 'ตำแหน่ง / เลื่อนยศ / ย้าย', short: 'ตำแหน่ง', emoji: '📈', color: '#5b4bc4' },
   { id: 'other', label: 'อื่น ๆ', short: 'อื่น ๆ', emoji: '⭐', color: '#64748b' },
 ];

@@ -17,18 +17,18 @@ const fileIcon = (f) => (isImage(f) ? '🖼️' : /pdf/.test(f.mime || '') ? '�
 const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '');
 
 /** รูปย่อขนาดเล็ก (เก็บในแอป ให้เห็นรูปได้ทันทีโดยไม่ต้องโหลดจาก Drive) */
-async function makeThumb(file) {
+export async function makeThumb(file, size = 160, quality = 0.62) {
   if (!/^image\//.test(file.type)) return '';
   try {
     const bmp = await createImageBitmap(file);
-    const s = 160 / Math.max(bmp.width, bmp.height);
+    const s = size / Math.max(bmp.width, bmp.height);
     const w = Math.max(1, Math.round(bmp.width * Math.min(1, s)));
     const h = Math.max(1, Math.round(bmp.height * Math.min(1, s)));
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
     c.getContext('2d').drawImage(bmp, 0, 0, w, h);
-    return c.toDataURL('image/jpeg', 0.62);
+    return c.toDataURL('image/jpeg', quality);
   } catch (_) {
     return '';
   }
@@ -278,7 +278,7 @@ export function openPortfolioForm(item = null, prefill = {}) {
           result: $('#pf-result', root).value.trim(),
           lesson: $('#pf-lesson', root).value.trim(),
           figures: figures.filter((f) => f.label && f.n !== '' && Number.isFinite(Number(f.n))).map((f) => ({ ...f, n: Number(f.n) })),
-          files: files.filter((f) => f.id),
+          files: files.filter((f) => f.id || f.thumb),
           links,
           highlight: $('#pf-hl', root).checked,
           source: d.source || null,

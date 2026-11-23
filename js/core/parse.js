@@ -46,8 +46,12 @@ const URGENT_RE = /ด่วนที่สุด|ด่วนมาก|ด่�
 const LINK_RE = /https?:\/\/[^\s<>"'”）)]+/gi;
 
 /** แปลงเลขไทยเป็นอารบิก และจัดช่องว่าง */
+// ฟอนต์ไทยรุ่นเก่า (Word) เก็บวรรณยุกต์/สระที่เลื่อนตำแหน่งเป็นอักขระพิเศษ U+F700–F71A → แปลงกลับเป็นตัวปกติ
+const THAI_PUA = 'ฐิีึื่้๊๋์่้๊๋์ญัํ็่้๊๋์ฺุู';
+export const fixThaiPUA = (s) => String(s || '').replace(/[\uF700-\uF71A]/g, (c) => THAI_PUA[c.charCodeAt(0) - 0xf700]);
+
 export function normalize(text) {
-  return String(text || '')
+  return fixThaiPUA(text)
     .replace(/[๐-๙]/g, (d) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d)))
     .replace(/\r\n?/g, '\n')
     .replace(/[ \t ​]+/g, ' ')

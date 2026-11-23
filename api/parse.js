@@ -34,7 +34,7 @@ const LearnResult = z.object({
   points: z.array(z.object({ text: z.string(), category: z.enum(LEARN_CATS) })),
 });
 // โหมด "แฟ้มผลงาน": แยกผลงานจากข้อความ
-const PF_TYPES = ['case', 'award', 'training', 'mission', 'project', 'speaker', 'career', 'other'];
+const PF_TYPES = ['case', 'award', 'training', 'mission', 'project', 'speaker', 'volunteer', 'career', 'other'];
 const PortfolioResult = z.object({
   items: z.array(
     z.object({
@@ -57,7 +57,7 @@ Return each distinct achievement in the text, in order. Do not invent achievemen
 Privacy: never copy personal data of suspects, victims or witnesses (names, ID card numbers, phone numbers, bank account numbers, home addresses, ages). Describe them generically (e.g. "ผู้ต้องหา 5 ราย"). Names and ranks of officers may stay.
 
 Fields:
-- type: "case" (arrests, investigations, seizures), "award" (awards, commendations, certificates of honor), "training" (courses, seminars, study visits completed), "mission" (special operations, security duty, checkpoints, rescue), "project" (initiatives, systems, manuals), "speaker" (lecturing, teaching), "career" (promotion, appointment, transfer), "other".
+- type: "case" (arrests, investigations, seizures), "award" (awards, commendations, certificates of honor, prizes), "training" (courses, seminars, study visits completed), "mission" (special operations, security duty, checkpoints, rescue), "project" (initiatives, systems, apps, manuals, designs), "speaker" (lecturing, teaching), "volunteer" (volunteer work, donations, charity runs, ceremonies, sports and unit activities), "career" (promotion, appointment, duty assignment, transfer), "other".
 - title: short Thai title of the achievement (at most about 80 characters) without dates, places or polite particles.
 - date / endDate: YYYY-MM-DD in the Gregorian calendar; convert Buddhist Era years (2569 = 2026, "69" = 2026). Achievements are usually in the past: resolve relative dates ("เมื่อวาน", "วันศุกร์ที่ผ่านมา") backwards from the current date. endDate only for a date range, else "". date "" if none is given.
 - role: the officer's own role if stated (หัวหน้าชุด, ผู้ร่วมปฏิบัติ, วิทยากร, ผู้เข้าอบรม, ผู้ได้รับรางวัล ...), else "".
