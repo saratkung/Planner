@@ -8,7 +8,7 @@ import {
 } from '../core/portfolio.js';
 import { openModal, confirmDialog } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 import { confetti } from '../ui/confetti.js';
 import { uploadAttachment, canAttach } from '../sync/drive.js';
 
@@ -310,8 +310,8 @@ export function openPortfolioDetail(id) {
     body: `
       <article class="pfd" style="--c:${t.color}">
         <div class="pfd-hero">
-          <span class="pfd-emoji">${t.emoji}</span>
-          <div><h3>${esc(p.title)}${p.highlight ? ' <span class="pf-star" title="ผลงานเด่น">⭐</span>' : ''}</h3>
+          ${tile(t.icon, t.color, 'lg pfd-emoji')}
+          <div><h3>${esc(p.title)}${p.highlight ? ' <span class="pf-star-t" title="ผลงานเด่น">★</span>' : ''}</h3>
             <p class="muted">${formatDate(p.date, { weekday: true })}${p.endDate && p.endDate !== p.date ? ` – ${formatDate(p.endDate)}` : ''}</p></div>
         </div>
         <div class="pfd-tags">

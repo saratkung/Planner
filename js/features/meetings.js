@@ -8,7 +8,7 @@ import {
 } from '../core/utils.js';
 import { meetingsBetween, meetingStatus, minutesUntil, minutesOf, actionItems } from '../core/selectors.js';
 import { toggleTask } from '../core/actions.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 import { checkbox, emptyState, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openEventForm } from '../forms/eventForm.js';
 import { openSmartPaste } from '../forms/smartPaste.js';
@@ -116,10 +116,10 @@ export default {
       const mins = week.reduce((a, m) => a + (m.allDay ? 0 : Math.max(0, timeToMin(m.end) - timeToMin(m.start))), 0);
       const open = store.state.tasks.filter((t) => t.meetingId && !t.done).length;
       $('#meet-stats', root).innerHTML = `
-        <div class="card mini-stat"><span class="ms-emoji">📅</span><div><b data-count="${todays.length}">${todays.length}</b><p class="muted">ประชุมวันนี้</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">👥</span><div><b data-count="${week.length}">${week.length}</b><p class="muted">ประชุมใน 7 วันข้างหน้า</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">⏱️</span><div><b>${mins ? durationLabel(mins) : '0 ชม.'}</b><p class="muted">เวลาประชุม 7 วันข้างหน้า</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">✅</span><div><b data-count="${open}">${open}</b><p class="muted">งานค้างจากการประชุม</p></div></div>`;
+        <div class="card mini-stat">${tile('calendar', '#5b4bc4')}<div><b data-count="${todays.length}">${todays.length}</b><p class="muted">ประชุมวันนี้</p></div></div>
+        <div class="card mini-stat">${tile('users', '#0ea5e9')}<div><b data-count="${week.length}">${week.length}</b><p class="muted">ประชุมใน 7 วันข้างหน้า</p></div></div>
+        <div class="card mini-stat">${tile('clock', '#ec4899')}<div><b>${mins ? durationLabel(mins) : '0 ชม.'}</b><p class="muted">เวลาประชุม 7 วันข้างหน้า</p></div></div>
+        <div class="card mini-stat">${tile('checkSquare', '#10b981')}<div><b data-count="${open}">${open}</b><p class="muted">งานค้างจากการประชุม</p></div></div>`;
       if (first) $('#meet-stats', root).querySelectorAll('[data-count]').forEach((n) => countUp(n, Number(n.dataset.count)));
     };
 

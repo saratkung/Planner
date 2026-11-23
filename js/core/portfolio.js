@@ -5,15 +5,15 @@ import { store } from './store.js';
 import { todayKey, fromKey, toKey, formatDate, THAI_MONTHS_SHORT, thaiYear } from './utils.js';
 
 export const PF_TYPES = [
-  { id: 'case', label: 'คดี / การจับกุม', short: 'คดี', emoji: '🕵️', color: '#2a2563' },
-  { id: 'award', label: 'รางวัล / คำชมเชย', short: 'รางวัล', emoji: '🏅', color: '#d9a21b' },
-  { id: 'training', label: 'หลักสูตร / อบรม', short: 'อบรม', emoji: '🎓', color: '#0ea5e9' },
-  { id: 'mission', label: 'ภารกิจพิเศษ', short: 'ภารกิจ', emoji: '🎯', color: '#e11d48' },
-  { id: 'project', label: 'โครงการ / งานริเริ่ม', short: 'โครงการ', emoji: '🛠️', color: '#10b981' },
-  { id: 'speaker', label: 'วิทยากร / ถ่ายทอดความรู้', short: 'วิทยากร', emoji: '🎤', color: '#8b5cf6' },
-  { id: 'volunteer', label: 'กิจกรรม / จิตอาสา', short: 'กิจกรรม', emoji: '🤝', color: '#14b8a6' },
-  { id: 'career', label: 'ตำแหน่ง / เลื่อนยศ / ย้าย', short: 'ตำแหน่ง', emoji: '📈', color: '#5b4bc4' },
-  { id: 'other', label: 'อื่น ๆ', short: 'อื่น ๆ', emoji: '⭐', color: '#64748b' },
+  { id: 'case', label: 'คดี / การจับกุม', short: 'คดี', emoji: '🕵️', color: '#4338ca', icon: 'shieldSearch' },
+  { id: 'award', label: 'รางวัล / คำชมเชย', short: 'รางวัล', emoji: '🏅', color: '#d9a21b', icon: 'medal' },
+  { id: 'training', label: 'หลักสูตร / อบรม', short: 'อบรม', emoji: '🎓', color: '#0ea5e9', icon: 'gradCap' },
+  { id: 'mission', label: 'ภารกิจพิเศษ', short: 'ภารกิจ', emoji: '🎯', color: '#e11d48', icon: 'shieldStar' },
+  { id: 'project', label: 'โครงการ / งานริเริ่ม', short: 'โครงการ', emoji: '🛠️', color: '#10b981', icon: 'rocket' },
+  { id: 'speaker', label: 'วิทยากร / ถ่ายทอดความรู้', short: 'วิทยากร', emoji: '🎤', color: '#8b5cf6', icon: 'mic' },
+  { id: 'volunteer', label: 'กิจกรรม / จิตอาสา', short: 'กิจกรรม', emoji: '🤝', color: '#14b8a6', icon: 'handHeart' },
+  { id: 'career', label: 'ตำแหน่ง / เลื่อนยศ / ย้าย', short: 'ตำแหน่ง', emoji: '📈', color: '#5b4bc4', icon: 'trendUp' },
+  { id: 'other', label: 'อื่น ๆ', short: 'อื่น ๆ', emoji: '⭐', color: '#64748b', icon: 'star' },
 ];
 export const pfType = (id) => PF_TYPES.find((t) => t.id === id) || PF_TYPES[PF_TYPES.length - 1];
 

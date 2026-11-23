@@ -11,7 +11,7 @@ import {
   eventsOn, goalProgress, isOverdue, sortTasks, completionHistory, streak, daysLeft,
 } from '../core/selectors.js';
 import { toggleTask } from '../core/actions.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 import { ring, bar, animateMeters, checkbox, emptyState, meterMemory } from '../ui/widgets.js';
 import { openTaskForm } from '../forms/taskForm.js';
 import { openEventForm } from '../forms/eventForm.js';
@@ -30,7 +30,7 @@ function learnStrip() {
   const n = learningsBetween(todayKey(), todayKey()).length;
   const st = learnStreak();
   return `<section class="card ln-strip">
-    <span class="ln-strip-ico" aria-hidden="true">💡</span>
+    ${tile('bulb', '#d9a21b', 'ln-strip-ico')}
     <div class="ln-strip-text"><b>วันนี้เรียนรู้อะไร?</b>
       <small>${n ? `จดแล้ว ${n} เรื่อง${st > 1 ? ` · 🔥 ต่อเนื่อง ${st} วัน` : ''}` : 'จดสั้น ๆ แล้วระบบจัดหมวดให้'}</small></div>
     <form class="quick-input ln-quick" data-learn>${icon('plus')}<input class="input" placeholder="เช่น ฟังให้จบก่อนตัดสินใจ แล้วกด Enter" maxlength="500" aria-label="สิ่งที่ได้เรียนรู้วันนี้" enterkeyhint="done" /></form>
@@ -101,7 +101,7 @@ export default {
               ${dayInfo.reviewed ? `<p class="hero-done">✨ ปิดวันแล้ว${dayInfo.mood ? ` · ${['', '😣', '😮‍💨', '😐', '😊', '🤩'][dayInfo.mood]}` : ''}</p>` : ''}
             </div>
             <div class="hero-art" aria-hidden="true">
-              <div class="hero-orbit"><span>🎯</span><span>📅</span><span>✅</span></div>
+              <div class="hero-orbit"><span>🎯</span><span>🗓️</span><span>✅</span></div>
               <div class="hero-big">${new Date().getDate()}</div>
               <div class="hero-month">${formatDate(new Date(), { year: false }).split(' ')[1]}</div>
             </div>

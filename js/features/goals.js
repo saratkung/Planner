@@ -6,7 +6,7 @@ import { esc, formatDate, enterTracker, $ } from '../core/utils.js';
 import { CATEGORIES, category } from '../core/constants.js';
 import { goalProgress, daysLeft } from '../core/selectors.js';
 import { toggleMilestone, toggleTask, removeWithUndo } from '../core/actions.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 import { ring, checkbox, emptyState, animateMeters, meterMemory, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openGoalForm } from '../forms/goalForm.js';
 import { openTaskForm } from '../forms/taskForm.js';
@@ -67,10 +67,10 @@ export default {
       const avg = all.length ? Math.round(all.reduce((a, p) => a + p.pct, 0) / all.length) : 0;
       const steps = all.reduce((a, p) => a + p.done, 0);
       $('#goal-stats', root).innerHTML = `
-        <div class="card mini-stat"><span class="ms-emoji">🎯</span><div><b>${all.length}</b><p class="muted">เป้าหมายทั้งหมด</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">🏆</span><div><b>${done}</b><p class="muted">สำเร็จแล้ว</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">📈</span><div><b>${avg}%</b><p class="muted">ความคืบหน้าเฉลี่ย</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">✅</span><div><b>${steps}</b><p class="muted">ขั้นตอนที่ทำแล้ว</p></div></div>`;
+        <div class="card mini-stat">${tile('target', '#5b4bc4')}<div><b>${all.length}</b><p class="muted">เป้าหมายทั้งหมด</p></div></div>
+        <div class="card mini-stat">${tile('trophy', '#d9a21b')}<div><b>${done}</b><p class="muted">สำเร็จแล้ว</p></div></div>
+        <div class="card mini-stat">${tile('trendUp', '#10b981')}<div><b>${avg}%</b><p class="muted">ความคืบหน้าเฉลี่ย</p></div></div>
+        <div class="card mini-stat">${tile('checkSquare', '#0ea5e9')}<div><b>${steps}</b><p class="muted">ขั้นตอนที่ทำแล้ว</p></div></div>`;
     };
 
     const renderGrid = () => {

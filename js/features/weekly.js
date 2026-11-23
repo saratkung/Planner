@@ -7,7 +7,7 @@ import { weekStats } from '../core/selectors.js';
 import { CATEGORIES, category } from '../core/constants.js';
 import { openModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 
 const MOOD = ['', '😣', '😮‍💨', '😐', '😊', '🤩'];
 
@@ -55,10 +55,10 @@ function body(s) {
   return `
     <div class="wk">
       <section class="wk-tiles">
-        <div class="wk-tile"><span class="wk-ico">✅</span><b>${s.done.length}</b><p>งานที่ทำเสร็จ</p>${delta(s.done.length, s.prevDone)}</div>
-        <div class="wk-tile"><span class="wk-ico">👥</span><b>${s.meetings}</b><p>ประชุม · ${hrs(s.meetingMins)}</p></div>
-        <div class="wk-tile"><span class="wk-ico">📝</span><b>${s.withNotes}/${s.pastMeetings}</b><p>ประชุมที่จดบันทึกแล้ว</p></div>
-        <div class="wk-tile ${s.open.length ? 'warn' : ''}"><span class="wk-ico">${s.open.length ? '⚠️' : '🎉'}</span><b>${s.open.length}</b><p>งานค้าง${s.isCurrent ? '' : 'ตอนสิ้นสัปดาห์'}</p></div>
+        <div class="wk-tile">${tile('checkSquare', '#10b981', 'wk-ico')}<b>${s.done.length}</b><p>งานที่ทำเสร็จ</p>${delta(s.done.length, s.prevDone)}</div>
+        <div class="wk-tile">${tile('users', '#0ea5e9', 'wk-ico')}<b>${s.meetings}</b><p>ประชุม · ${hrs(s.meetingMins)}</p></div>
+        <div class="wk-tile">${tile('note', '#5b4bc4', 'wk-ico')}<b>${s.withNotes}/${s.pastMeetings}</b><p>ประชุมที่จดบันทึกแล้ว</p></div>
+        <div class="wk-tile ${s.open.length ? 'warn' : ''}">${s.open.length ? tile('alert', '#e11d48', 'wk-ico') : tile('sparkles', '#d9a21b', 'wk-ico')}<b>${s.open.length}</b><p>งานค้าง${s.isCurrent ? '' : 'ตอนสิ้นสัปดาห์'}</p></div>
       </section>
 
       <section class="wk-charts">

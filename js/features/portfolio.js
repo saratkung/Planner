@@ -6,18 +6,21 @@ import { esc, todayKey, fromKey, formatDate, thaiYear, THAI_MONTHS_SHORT, enterT
 import {
   PF_TYPES, pfType, portfolio, filterPortfolio, countByType, sumFigures, fmtNum, withUnit, fiscalYear, fiscalRange, figureText,
 } from '../core/portfolio.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 import { emptyState, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openPortfolioForm, openPortfolioDetail } from '../forms/portfolioForm.js';
 import { openPortfolioReport } from '../forms/portfolioReport.js';
 import { openPortfolioPaste } from '../forms/portfolioPaste.js';
 
 const VIEW_KEY = 'planner.pfView';
-const FIG_EMOJI = [
-  [/จับ|ผู้ต้องหา/, '🚔'], [/ยึด|ทรัพย์|บาท|เงิน/, '💰'], [/ของกลาง/, '📦'], [/ผู้เสียหาย|ช่วยเหลือ/, '🤝'],
-  [/ชั่วโมง|อบรม/, '⏱️'], [/ผู้เข้าร่วม|คน/, '👥'],
+// ไอคอนของตัวเลขผลงาน (ตามชื่อ/หน่วย)
+const FIG_ICON = [
+  [/จับ|ผู้ต้องหา/, 'shieldSearch'], [/ยึด|ทรัพย์|บาท|เงิน/, 'coins'], [/ของกลาง|ยาบ้า|ไอซ์|อาวุธ/, 'briefcase'], [/ผู้เสียหาย|ช่วยเหลือ/, 'handHeart'],
+  [/ชั่วโมง|อบรม/, 'clock'], [/ผู้เข้าร่วม|คน/, 'users'],
 ];
-const figEmoji = (f) => (FIG_EMOJI.find(([re]) => re.test(`${f.label} ${f.unit}`)) || [null, '🔢'])[1];
+const figIconName = (f) => (FIG_ICON.find(([re]) => re.test(`${f.label} ${f.unit}`)) || [null, 'chart'])[1];
+const figEmoji = (f) => icon(figIconName(f), 'fig-ico');
+const STAR = `<svg class="pf-star" viewBox="0 0 24 24" aria-label="ผลงานเด่น" role="img"><path d="m12 2.8 2.9 5.9 6.4.9-4.7 4.6 1.1 6.4L12 17.6l-5.7 3 1.1-6.4-4.7-4.6 6.4-.9Z" fill="#f5b82e" stroke="#c98a0b" stroke-width="1" stroke-linejoin="round"/></svg>`;
 const shortDate = (k) => {
   const d = fromKey(k);
   return `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]} ${String(thaiYear(d)).slice(2)}`;
@@ -30,9 +33,9 @@ function card(p, track) {
   const more = p.files.length + p.links.length - thumbs.length;
   return `<article class="card pf-card card-hover${p.highlight ? ' hl' : ''}${cls}" style="${vars}--c:${t.color}" data-pf="${p.id}" tabindex="0" role="button" aria-label="${esc(p.title)}">
     <div class="pf-card-top">
-      <span class="pf-badge">${t.emoji}</span>
+      ${tile(t.icon, t.color, 'pf-badge')}
       <div class="pf-card-meta"><span class="pf-type">${esc(t.label)}</span><span class="muted">${shortDate(p.date)}${p.endDate && p.endDate !== p.date ? ` – ${shortDate(p.endDate)}` : ''}</span></div>
-      ${p.highlight ? '<span class="pf-star" title="ผลงานเด่น">⭐</span>' : ''}
+      ${p.highlight ? STAR : ''}
     </div>
     <h3>${esc(p.title)}</h3>
     ${p.role || p.org ? `<p class="pf-role">${p.role ? `👤 ${esc(p.role)}` : ''}${p.role && p.org ? ' · ' : ''}${p.org ? esc(p.org) : ''}</p>` : ''}
@@ -59,7 +62,7 @@ function timeline(list, track) {
             const { cls, vars } = track.attrs('tl' + p.id);
             const big = p.type === 'career' || p.highlight;
             return `<li class="pf-node${big ? ' big' : ''}${cls}" style="${vars}--c:${t.color}" data-pf="${p.id}" tabindex="0" role="button">
-              <span class="pf-dot">${t.emoji}</span>
+              <span class="pf-dot">${tile(t.icon, t.color, 'round sm')}</span>
               <div class="pf-node-body">
                 <span class="pf-node-date">${formatDate(p.date, { short: true, year: false })} · ${esc(t.short)}${p.highlight ? ' · ⭐' : ''}</span>
                 <b>${esc(p.title)}</b>
@@ -144,14 +147,14 @@ export default {
       const thisFy = all.filter((p) => p.date >= from && p.date <= to).length;
       const years = all.length ? thaiYear(new Date()) - Math.min(...all.map((p) => thaiYear(fromKey(p.date)))) + 1 : 0;
       $('#pf-stats', root).innerHTML = `
-        <div class="card mini-stat"><span class="ms-emoji">🏆</span><div><b data-count="${all.length}">${all.length}</b><p class="muted">ผลงานทั้งหมด</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">⭐</span><div><b data-count="${all.filter((p) => p.highlight).length}">${all.filter((p) => p.highlight).length}</b><p class="muted">ผลงานเด่น</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">🗓️</span><div><b data-count="${thisFy}">${thisFy}</b><p class="muted">ปีงบประมาณ ${fy}</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">🛤️</span><div><b data-count="${years}">${years}</b><p class="muted">ปีที่บันทึกไว้</p></div></div>`;
+        <div class="card mini-stat">${tile('trophy', '#d9a21b')}<div><b data-count="${all.length}">${all.length}</b><p class="muted">ผลงานทั้งหมด</p></div></div>
+        <div class="card mini-stat">${tile('star', '#f59e0b')}<div><b data-count="${all.filter((p) => p.highlight).length}">${all.filter((p) => p.highlight).length}</b><p class="muted">ผลงานเด่น</p></div></div>
+        <div class="card mini-stat">${tile('calendar', '#5b4bc4')}<div><b data-count="${thisFy}">${thisFy}</b><p class="muted">ปีงบประมาณ ${fy}</p></div></div>
+        <div class="card mini-stat">${tile('route', '#14b8a6')}<div><b data-count="${years}">${years}</b><p class="muted">ปีที่บันทึกไว้</p></div></div>`;
       if (first) $$('[data-count]', root).forEach((n) => countUp(n, Number(n.dataset.count)));
       const figs = sumFigures(filtered()).slice(0, 6);
       $('#pf-figbar', root).innerHTML = figs.length
-        ? figs.map((f, i) => `<div class="pf-total" style="--i:${i}"><span>${figEmoji(f)}</span><b>${fmtNum(f.n, f.unit)}</b><small>${esc(f.unit)} · ${esc(f.label)}</small></div>`).join('')
+        ? figs.map((f, i) => `<div class="pf-total" style="--i:${i}"><span>${icon(figIconName(f))}</span><b>${fmtNum(f.n, f.unit)}</b><small>${esc(f.unit)} · ${esc(f.label)}</small></div>`).join('')
         : '';
       $('#pf-figbar', root).hidden = !figs.length;
     };

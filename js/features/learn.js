@@ -8,7 +8,7 @@ import {
   LEARN_CATS, learnCat, processLearning, saveLearnings, learnings, learningsBetween, learnStreak, byCategory,
 } from '../core/learn.js';
 import { aiReady, aiLearn } from '../sync/ai.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
 import { confetti } from '../ui/confetti.js';
 import { emptyState, segmented, bindSegmented, moveSegIndicator, animateMeters } from '../ui/widgets.js';
@@ -122,10 +122,10 @@ export default {
       const recent = learningsBetween(toKey(addDays(new Date(), -29)), todayKey());
       const top = byCategory(recent).sort((a, b) => b.n - a.n)[0];
       $('#ln-stats', root).innerHTML = `
-        <div class="card mini-stat"><span class="ms-emoji">💡</span><div><b data-count="${today}">${today}</b><p class="muted">เรื่องวันนี้</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji ${st ? 'ln-flame' : ''}">🔥</span><div><b data-count="${st}">${st}</b><p class="muted">วันต่อเนื่อง</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">📚</span><div><b data-count="${all}">${all}</b><p class="muted">เรื่องทั้งหมด</p></div></div>
-        <div class="card mini-stat"><span class="ms-emoji">${top ? top.cat.emoji : '🏆'}</span><div><b class="ln-top">${top ? esc(top.cat.short) : '–'}</b><p class="muted">หมวดเด่น 30 วัน</p></div></div>`;
+        <div class="card mini-stat">${tile('bulb', '#d9a21b')}<div><b data-count="${today}">${today}</b><p class="muted">เรื่องวันนี้</p></div></div>
+        <div class="card mini-stat">${tile('fire', '#f97316', st ? 'flame' : '')}<div><b data-count="${st}">${st}</b><p class="muted">วันต่อเนื่อง</p></div></div>
+        <div class="card mini-stat">${tile('book', '#0ea5e9')}<div><b data-count="${all}">${all}</b><p class="muted">เรื่องทั้งหมด</p></div></div>
+        <div class="card mini-stat">${top ? tile(top.cat.icon, top.cat.color) : tile('trophy', '#94a3b8')}<div><b class="ln-top">${top ? esc(top.cat.short) : '–'}</b><p class="muted">หมวดเด่น 30 วัน</p></div></div>`;
       if (first) $$('[data-count]', root).forEach((n) => countUp(n, Number(n.dataset.count)));
     };
 
@@ -142,7 +142,7 @@ export default {
       host.innerHTML = `<div class="ln-bars">${groups
         .map(
           (g, i) => `<button type="button" class="ln-bar${cat === g.cat.id ? ' on' : ''}" data-cat="${g.cat.id}" style="--i:${i};--c:${g.cat.color}">
-            <span class="ln-bar-label">${g.cat.emoji} ${esc(g.cat.label)}</span>
+            <span class="ln-bar-label">${tile(g.cat.icon, g.cat.color, 'xxs')}${esc(g.cat.label)}</span>
             <span class="progress"><span data-p="${Math.round((g.n / max) * 100)}%" style="--p:0%;--c:${g.cat.color}"></span></span>
             <b>${g.n}</b></button>`,
         )
@@ -199,7 +199,7 @@ export default {
                 const c = learnCat(l.cat);
                 const { cls, vars } = track.attrs(l.id);
                 return `<li class="ln-item${cls}" data-ln="${l.id}" style="${vars}--c:${c.color}" tabindex="0" role="button" aria-label="แก้ไข: ${esc(l.text)}">
-                  <span class="ln-emoji" title="${esc(c.label)}">${c.emoji}</span>
+                  <span class="ln-emoji" title="${esc(c.label)}">${tile(c.icon, c.color, 'sm')}</span>
                   <div class="ln-body"><p>${esc(l.text)}</p><span class="ln-cat">${esc(c.label)}${l.source === 'ai' ? ' · 🤖 AI' : l.source === 'review' ? ' · 🌙 สรุปวัน' : ''}</span></div>
                   <button type="button" class="icon-btn sm danger" data-del aria-label="ลบ">${icon('trash')}</button>
                 </li>`;

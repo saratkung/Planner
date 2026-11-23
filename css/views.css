@@ -1967,3 +1967,112 @@
 .pp-photo button svg { width: 12px; height: 12px; }
 .pp-upbar { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px; background: var(--accent-soft); font-size: 13px; font-weight: 600; color: var(--accent-ink); }
 .pp-upbar .progress span { transition: width 0.3s; }
+
+/* ==========================================================
+   กระเบื้องไอคอน (ใช้ร่วมกันทุกการ์ด) — ไล่สีตาม --c, ไอคอนสีขาว, แสงวิ่งเมื่อชี้
+   ========================================================== */
+.itile {
+  --s: 46px;
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--s);
+  height: var(--s);
+  border-radius: calc(var(--s) * 0.32);
+  color: #fff;
+  font-size: 0;
+  background:
+    radial-gradient(120% 90% at 18% 0%, color-mix(in srgb, var(--c) 45%, #fff) 0%, transparent 58%),
+    linear-gradient(150deg, color-mix(in srgb, var(--c) 80%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 78%, #000) 100%);
+  box-shadow:
+    0 8px 18px -9px color-mix(in srgb, var(--c) 85%, transparent),
+    0 2px 5px -3px color-mix(in srgb, var(--c) 60%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: transform 0.45s var(--spring), box-shadow 0.3s var(--ease);
+}
+.itile svg {
+  position: relative;
+  z-index: 1;
+  width: calc(var(--s) * 0.5);
+  height: calc(var(--s) * 0.5);
+  stroke-width: 2.1;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.2));
+}
+.itile::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: -45%;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg) translateX(-120%);
+  transition: transform 0.8s var(--ease);
+  pointer-events: none;
+}
+.card:hover .itile, .itile:hover, .pf-node:hover .itile, .ln-item:hover .itile, .wk-tile:hover .itile, .ln-strip:hover .itile {
+  transform: rotate(-7deg) scale(1.07);
+  box-shadow:
+    0 12px 22px -9px color-mix(in srgb, var(--c) 90%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+}
+.card:hover .itile::after, .itile:hover::after, .pf-node:hover .itile::after, .ln-item:hover .itile::after, .wk-tile:hover .itile::after, .ln-strip:hover .itile::after {
+  transform: skewX(-20deg) translateX(560%);
+}
+.itile.lg { --s: 58px; }
+.itile.sm { --s: 38px; }
+.itile.xs { --s: 30px; }
+.itile.round { border-radius: 50%; }
+.itile.soft {
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 13%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent);
+}
+.itile.flame svg { animation: wiggle 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+@media (prefers-reduced-motion: reduce) {
+  .itile, .itile::after { transition: none; }
+  .itile.flame svg { animation: none; }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .itile { box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.2); }
+}
+:root[data-theme='dark'] .itile { box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.2); }
+
+/* ที่วางกระเบื้องแทนอิโมจิเดิม */
+.ln-emoji { width: auto; height: auto; background: none; border-radius: 0; font-size: 0; }
+.pf-card-top .itile { --s: 42px; }
+.pfd-emoji.itile { animation: popIn 0.5s var(--spring) both; }
+.wk-tile .itile { --s: 34px; margin-bottom: 6px; }
+.ln-strip-ico.itile { --s: 44px; }
+.pf-dot { left: -27px; top: 4px; width: auto; height: auto; border: 0; background: none; box-shadow: none; }
+.pf-dot .itile { box-shadow: 0 0 0 4px var(--bg), 0 6px 12px -6px color-mix(in srgb, var(--c) 85%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+.pf-node.big .pf-dot { left: -30px; top: 1px; width: auto; height: auto; border: 0; box-shadow: none; }
+.pf-node.big .pf-dot .itile { --s: 44px; box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px color-mix(in srgb, var(--gold) 45%, transparent), 0 8px 16px -6px color-mix(in srgb, var(--c) 85%, transparent); }
+
+/* การ์ดสถิติหน้าภาพรวม: ใช้แบบเดียวกัน */
+.stat-ico {
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 18% 0%, color-mix(in srgb, var(--c) 45%, #fff) 0%, transparent 58%),
+    linear-gradient(150deg, color-mix(in srgb, var(--c) 80%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 78%, #000) 100%);
+  box-shadow: 0 8px 18px -9px color-mix(in srgb, var(--c) 85%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.45s var(--spring);
+}
+.stat-ico svg { stroke-width: 2.1; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.2)); }
+.card:hover .stat-ico { transform: rotate(-7deg) scale(1.06); }
+
+/* ไอคอนตัวเลขผลงาน / ดาวผลงานเด่น / แถบหมวด */
+.pf-total span { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; background: rgba(255, 255, 255, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+.pf-total span svg { width: 22px; height: 22px; stroke-width: 2.1; }
+.fig-ico { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; color: var(--accent); stroke-width: 2.2; }
+.pf-figpill b { display: inline-flex; align-items: center; gap: 4px; }
+svg.pf-star { width: 22px; height: 22px; margin-left: auto; flex: none; filter: drop-shadow(0 2px 4px rgba(217, 162, 27, 0.45)); animation: starPop 0.6s var(--spring) both; }
+.pf-star-t { color: var(--gold); }
+.itile.xxs { --s: 24px; border-radius: 8px; }
+.itile.xxs svg { stroke-width: 2.3; }
+.ln-bar-label { display: inline-flex; align-items: center; gap: 8px; }
