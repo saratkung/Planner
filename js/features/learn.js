@@ -8,7 +8,7 @@ import {
   LEARN_CATS, learnCat, processLearning, saveLearnings, learnings, learningsBetween, learnStreak, byCategory,
 } from '../core/learn.js';
 import { aiReady, aiLearn } from '../sync/ai.js';
-import { icon, tile } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { toast } from '../ui/toast.js';
 import { confetti } from '../ui/confetti.js';
 import { emptyState, segmented, bindSegmented, moveSegIndicator, animateMeters } from '../ui/widgets.js';
@@ -163,7 +163,7 @@ export default {
       $('#ln-filter', root).innerHTML = [
         `<button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">ทุกหมวด <span class="seg-count">${list.length}</span></button>`,
         ...LEARN_CATS.filter((c) => counts[c.id] || cat === c.id).map(
-          (c) => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${c.emoji} ${c.short} <span class="seg-count">${counts[c.id] || 0}</span></button>`,
+          (c) => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${chipIcon(c.icon, c.color)}${c.short} <span class="seg-count">${counts[c.id] || 0}</span></button>`,
         ),
       ].join('');
     };
@@ -227,7 +227,7 @@ export default {
               <button type="button" class="ln-rv-cat" data-pick="${i}" aria-label="เปลี่ยนหมวด (ตอนนี้: ${esc(c.label)})"><span>${c.emoji}</span><small>${esc(c.short)}</small></button>
               <textarea class="ln-rv-text" rows="1" data-text="${i}" aria-label="ข้อความ">${esc(p.text)}</textarea>
               <button type="button" class="icon-btn sm" data-drop="${i}" aria-label="ไม่บันทึกข้อนี้">${icon('x')}</button>
-              <div class="ln-picker" data-picker="${i}" hidden>${LEARN_CATS.map((x) => `<button type="button" class="chip${x.id === p.cat ? ' active' : ''}" data-set="${x.id}">${x.emoji} ${x.short}</button>`).join('')}</div>
+              <div class="ln-picker" data-picker="${i}" hidden>${LEARN_CATS.map((x) => `<button type="button" class="chip${x.id === p.cat ? ' active' : ''}" data-set="${x.id}">${chipIcon(x.icon, x.color)}${x.short}</button>`).join('')}</div>
             </li>`;
           })
           .join('')}</ul>

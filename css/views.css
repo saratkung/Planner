@@ -2076,3 +2076,18 @@ svg.pf-star { width: 22px; height: 22px; margin-left: auto; flex: none; filter: 
 .itile.xxs { --s: 24px; border-radius: 8px; }
 .itile.xxs svg { stroke-width: 2.3; }
 .ln-bar-label { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ไอคอนในปุ่มกรอง / ปุ่มเลือก */
+.itile.chipi {
+  --s: 20px;
+  border-radius: 6px;
+  margin-left: -4px;
+  box-shadow: 0 2px 5px -2px color-mix(in srgb, var(--c) 75%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.itile.chipi svg { width: 12px; height: 12px; stroke-width: 2.6; filter: none; }
+.itile.chipi::after { display: none; }
+.card:hover .itile.chipi, .ln-item:hover .itile.chipi, .itile.chipi:hover { transform: none; box-shadow: 0 2px 5px -2px color-mix(in srgb, var(--c) 75%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.chip:hover .itile.chipi { transform: rotate(-8deg) scale(1.08); }
+.chip.active .itile.chipi { box-shadow: 0 0 0 2px var(--surface), 0 3px 7px -2px color-mix(in srgb, var(--c) 80%, transparent); }
+.chip:not(.active) .itile.chipi { filter: saturate(0.9); }
+.section-title .itile.chipi { margin-left: 0; }

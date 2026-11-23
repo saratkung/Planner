@@ -3,11 +3,11 @@
 // ==========================================================
 
 export const CATEGORIES = [
-  { id: 'work', label: 'งาน', emoji: '💼', color: '#6366f1' },
-  { id: 'study', label: 'การเรียนรู้', emoji: '📚', color: '#0ea5e9' },
-  { id: 'health', label: 'สุขภาพ', emoji: '💪', color: '#10b981' },
-  { id: 'finance', label: 'การเงิน', emoji: '💰', color: '#f59e0b' },
-  { id: 'personal', label: 'ส่วนตัว', emoji: '🌱', color: '#ec4899' },
+  { id: 'work', label: 'งาน', emoji: '💼', color: '#6366f1', icon: 'briefcase' },
+  { id: 'study', label: 'การเรียนรู้', emoji: '📚', color: '#0ea5e9', icon: 'book' },
+  { id: 'health', label: 'สุขภาพ', emoji: '💪', color: '#10b981', icon: 'heartPulse' },
+  { id: 'finance', label: 'การเงิน', emoji: '💰', color: '#f59e0b', icon: 'coins' },
+  { id: 'personal', label: 'ส่วนตัว', emoji: '🌱', color: '#ec4899', icon: 'sprout' },
 ];
 
 export const category = (id) => CATEGORIES.find((c) => c.id === id) || CATEGORIES[0];

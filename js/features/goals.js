@@ -6,7 +6,7 @@ import { esc, formatDate, enterTracker, $ } from '../core/utils.js';
 import { CATEGORIES, category } from '../core/constants.js';
 import { goalProgress, daysLeft } from '../core/selectors.js';
 import { toggleMilestone, toggleTask, removeWithUndo } from '../core/actions.js';
-import { icon, tile } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { ring, checkbox, emptyState, animateMeters, meterMemory, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openGoalForm } from '../forms/goalForm.js';
 import { openTaskForm } from '../forms/taskForm.js';
@@ -57,7 +57,7 @@ export default {
     const renderCats = () => {
       $('#goal-cats', root).innerHTML = [
         `<button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">ทุกด้าน</button>`,
-        ...CATEGORIES.map((c) => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${c.emoji} ${c.label}</button>`),
+        ...CATEGORIES.map((c) => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${chipIcon(c.icon, c.color)}${c.label}</button>`),
       ].join('');
     };
 

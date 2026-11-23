@@ -8,7 +8,7 @@ import { LEARN_CATS, learnCat, reportText, botIntro, lineShareURL, classify } fr
 import { openModal, confirmDialog } from '../ui/modal.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 
 const PERIODS = [
   { id: 'today', label: 'วันนี้' },
@@ -165,7 +165,7 @@ function lineLogo() {
 /** เลือกหมวด (ปุ่มกลมเล็ก ๆ) */
 export function catPicker(active, name = 'cat') {
   return `<div class="chips ln-cats" role="radiogroup" aria-label="หมวด">${LEARN_CATS.map(
-    (c) => `<button type="button" class="chip${c.id === active ? ' active' : ''}" role="radio" aria-checked="${c.id === active}" data-${name}="${c.id}" style="--c:${c.color}">${c.emoji} ${c.short}</button>`,
+    (c) => `<button type="button" class="chip${c.id === active ? ' active' : ''}" role="radio" aria-checked="${c.id === active}" data-${name}="${c.id}" style="--c:${c.color}">${chipIcon(c.icon, c.color)}${c.short}</button>`,
   ).join('')}</div>`;
 }
 

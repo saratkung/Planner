@@ -7,7 +7,7 @@ import { normalize } from '../core/parse.js';
 import { occursOn } from '../core/selectors.js';
 import { REPEATS, category } from '../core/constants.js';
 import { openModal } from '../ui/modal.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { openMeeting } from '../forms/meetingRoom.js';
 import { openEventForm } from '../forms/eventForm.js';
 import { openTaskForm } from '../forms/taskForm.js';
@@ -19,13 +19,13 @@ import { openPortfolioDetail } from '../forms/portfolioForm.js';
 
 const RECENT_KEY = 'planner.recentSearches';
 const GROUPS = [
-  { id: 'meeting', label: 'ประชุม', emoji: '👥' },
-  { id: 'note', label: 'บันทึกประชุม', emoji: '📝' },
-  { id: 'event', label: 'นัดหมาย', emoji: '📅' },
-  { id: 'task', label: 'งาน', emoji: '✅' },
-  { id: 'goal', label: 'เป้าหมาย', emoji: '🎯' },
-  { id: 'learn', label: 'การเรียนรู้', emoji: '💡' },
-  { id: 'portfolio', label: 'แฟ้มผลงาน', emoji: '🏆' },
+  { id: 'meeting', label: 'ประชุม', emoji: '👥', icon: 'users', color: '#0ea5e9' },
+  { id: 'note', label: 'บันทึกประชุม', emoji: '📝', icon: 'note', color: '#5b4bc4' },
+  { id: 'event', label: 'นัดหมาย', emoji: '📅', icon: 'calendar', color: '#ec4899' },
+  { id: 'task', label: 'งาน', emoji: '✅', icon: 'checkSquare', color: '#10b981' },
+  { id: 'goal', label: 'เป้าหมาย', emoji: '🎯', icon: 'target', color: '#6366f1' },
+  { id: 'learn', label: 'การเรียนรู้', emoji: '💡', icon: 'bulb', color: '#d9a21b' },
+  { id: 'portfolio', label: 'แฟ้มผลงาน', emoji: '🏆', icon: 'trophy', color: '#f59e0b' },
 ];
 const PER_GROUP = 6;
 
@@ -254,7 +254,7 @@ export function openSearch({ navigate, query = '' } = {}) {
           <input class="input" id="srch-q" type="search" placeholder="ค้นหาประชุม งาน บันทึก การเรียนรู้ ชื่อคน…" value="${esc(query)}" autocomplete="off" enterkeyhint="search" aria-label="คำค้นหา" />
         </div>
         <div class="chips srch-filters" role="tablist">
-          ${[{ id: 'all', label: 'ทั้งหมด', emoji: '' }, ...GROUPS].map((g) => `<button type="button" class="chip${g.id === 'all' ? ' active' : ''}" data-filter="${g.id}">${g.emoji ? g.emoji + ' ' : ''}${g.label}<span class="srch-n" data-n="${g.id}"></span></button>`).join('')}
+          ${[{ id: 'all', label: 'ทั้งหมด', emoji: '' }, ...GROUPS].map((g) => `<button type="button" class="chip${g.id === 'all' ? ' active' : ''}" data-filter="${g.id}">${g.icon ? chipIcon(g.icon, g.color) : ''}${g.label}<span class="srch-n" data-n="${g.id}"></span></button>`).join('')}
         </div>
         <div id="srch-results" class="srch-results" role="listbox" aria-label="ผลการค้นหา"></div>
       </div>`,
@@ -300,7 +300,7 @@ export function openSearch({ navigate, query = '' } = {}) {
             if (!items.length) return '';
             const shown = filter === 'all' ? items.slice(0, PER_GROUP) : items;
             return `<section class="srch-group">
-              <h4 class="section-title">${g.emoji} ${g.label} <span class="count">${items.length}</span>
+              <h4 class="section-title">${chipIcon(g.icon, g.color)}${g.label} <span class="count">${items.length}</span>
                 ${filter === 'all' && items.length > PER_GROUP ? `<button type="button" class="link-btn srch-more" data-more="${g.id}">ดูทั้งหมด</button>` : ''}</h4>
               ${shown
                 .map((r) => {

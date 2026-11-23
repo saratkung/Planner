@@ -8,7 +8,7 @@ import {
 } from '../core/portfolio.js';
 import { openModal, confirmDialog } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
-import { icon, tile } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { confetti } from '../ui/confetti.js';
 import { uploadAttachment, canAttach } from '../sync/drive.js';
 
@@ -71,7 +71,7 @@ export function openPortfolioForm(item = null, prefill = {}) {
       <form class="form-grid pf-form" id="pf-form" novalidate>
         <div class="field"><label>ประเภทผลงาน</label>
           <div class="chips pf-types" role="radiogroup" aria-label="ประเภทผลงาน">${PF_TYPES.map(
-            (t) => `<button type="button" class="chip${t.id === type ? ' active' : ''}" role="radio" aria-checked="${t.id === type}" data-type="${t.id}" style="--c:${t.color}">${t.emoji} ${t.short}</button>`,
+            (t) => `<button type="button" class="chip${t.id === type ? ' active' : ''}" role="radio" aria-checked="${t.id === type}" data-type="${t.id}" style="--c:${t.color}">${chipIcon(t.icon, t.color)}${t.short}</button>`,
           ).join('')}</div></div>
         <div class="field"><label for="pf-title">ชื่อผลงาน</label>
           <input class="input" id="pf-title" required maxlength="140" value="${esc(d.title)}" placeholder="เช่น สืบสวนจับกุมเครือข่ายยาเสพติด" /></div>

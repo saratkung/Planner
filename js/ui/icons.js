@@ -68,5 +68,8 @@ export function tile(name, color = 'var(--accent)', variant = '') {
   return `<span class="itile ${variant}" style="--c:${color}" aria-hidden="true">${icon(name)}</span>`;
 }
 
+/** ไอคอนเล็กในปุ่มกรอง/ปุ่มเลือก (chip) */
+export const chipIcon = (name, color) => tile(name, color, 'chipi');
+
 export const checkIcon = () =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10"/></svg>`;

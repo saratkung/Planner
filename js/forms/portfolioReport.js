@@ -10,7 +10,7 @@ import {
 import { openModal } from '../ui/modal.js';
 import { segmented, bindSegmented } from '../ui/widgets.js';
 import { toast } from '../ui/toast.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { sendToLine } from './learnReport.js';
 
 const PERIODS = [
@@ -153,7 +153,7 @@ export function openPortfolioReport() {
           <div class="field"><label for="pfr-from">ตั้งแต่</label><input class="input" type="date" id="pfr-from" /></div>
           <div class="field"><label for="pfr-to">ถึง</label><input class="input" type="date" id="pfr-to" value="${custom.to}" /></div>
         </div>
-        <div class="chips pfr-types">${PF_TYPES.map((t) => `<button type="button" class="chip active" data-t="${t.id}" style="--c:${t.color}">${t.emoji} ${t.short}</button>`).join('')}</div>
+        <div class="chips pfr-types">${PF_TYPES.map((t) => `<button type="button" class="chip active" data-t="${t.id}" style="--c:${t.color}">${chipIcon(t.icon, t.color)}${t.short}</button>`).join('')}</div>
         <div class="pfr-opts">
           <label class="switch-row"><input type="checkbox" id="pfr-hl" /><span class="switch" aria-hidden="true"></span><span>เฉพาะ ⭐ ผลงานเด่น</span></label>
           <label class="switch-row"><input type="checkbox" id="pfr-links" checked /><span class="switch" aria-hidden="true"></span><span>ใส่ลิงก์หลักฐาน</span></label>

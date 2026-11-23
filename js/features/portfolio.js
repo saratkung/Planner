@@ -6,7 +6,7 @@ import { esc, todayKey, fromKey, formatDate, thaiYear, THAI_MONTHS_SHORT, enterT
 import {
   PF_TYPES, pfType, portfolio, filterPortfolio, countByType, sumFigures, fmtNum, withUnit, fiscalYear, fiscalRange, figureText,
 } from '../core/portfolio.js';
-import { icon, tile } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { emptyState, segmented, bindSegmented, moveSegIndicator } from '../ui/widgets.js';
 import { openPortfolioForm, openPortfolioDetail } from '../forms/portfolioForm.js';
 import { openPortfolioReport } from '../forms/portfolioReport.js';
@@ -107,7 +107,7 @@ export default {
           <div id="pf-viewseg"></div>
           <div class="pf-tools">
             <select class="select pf-year-sel" id="pf-year" aria-label="ปี"></select>
-            <button class="btn btn-outline" id="pf-report">📄 ออกรายงาน</button>
+            <button class="btn btn-outline" id="pf-report">${icon('note')}ออกรายงาน</button>
             <button class="btn btn-gold" id="pf-paste" title="วางข้อความจาก LINE / ข่าว / รายงาน แล้วแยกเป็นผลงานให้">${icon('clipboard')}วางข้อความ</button>
             <button class="btn btn-primary" id="pf-new">${icon('plus')}เพิ่มผลงาน</button>
           </div>
@@ -165,8 +165,8 @@ export default {
       all.forEach((p) => (counts[p.type] = (counts[p.type] || 0) + 1));
       $('#pf-types', root).innerHTML = [
         `<button class="chip ${type === 'all' ? 'active' : ''}" data-type="all">ทุกประเภท</button>`,
-        ...PF_TYPES.filter((t) => counts[t.id] || type === t.id).map((t) => `<button class="chip ${type === t.id ? 'active' : ''}" data-type="${t.id}">${t.emoji} ${t.short} <span class="seg-count">${counts[t.id] || 0}</span></button>`),
-        `<button class="chip ${onlyHl ? 'active' : ''}" data-hl>⭐ เฉพาะผลงานเด่น</button>`,
+        ...PF_TYPES.filter((t) => counts[t.id] || type === t.id).map((t) => `<button class="chip ${type === t.id ? 'active' : ''}" data-type="${t.id}">${chipIcon(t.icon, t.color)}${t.short} <span class="seg-count">${counts[t.id] || 0}</span></button>`),
+        `<button class="chip ${onlyHl ? 'active' : ''}" data-hl>${chipIcon('star', '#f5b82e')}เฉพาะผลงานเด่น</button>`,
       ].join('');
       const fys = [...new Set(all.map((p) => fiscalYear(p.date)))].sort((a, b) => b - a);
       $('#pf-year', root).innerHTML = `<option value="all">ทุกปี</option>${fys.map((y) => `<option value="${y}" ${String(y) === year ? 'selected' : ''}>ปีงบ ${y}</option>`).join('')}`;

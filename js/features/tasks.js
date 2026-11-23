@@ -6,7 +6,7 @@ import { esc, todayKey, toKey, addDays, diffDays, relativeDay, enterTracker, $ }
 import { CATEGORIES, category, priority, REPEATS } from '../core/constants.js';
 import { isOverdue, sortTasks } from '../core/selectors.js';
 import { toggleTask, removeWithUndo } from '../core/actions.js';
-import { icon } from '../ui/icons.js';
+import { icon, tile, chipIcon } from '../ui/icons.js';
 import { checkbox, emptyState, segmented, bindSegmented, bar, animateMeters, meterMemory, moveSegIndicator } from '../ui/widgets.js';
 import { openTaskForm } from '../forms/taskForm.js';
 import { toast } from '../ui/toast.js';
@@ -110,7 +110,7 @@ export default {
       $('#task-cats', root).innerHTML = [
         `<button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">ทุกหมวด</button>`,
         ...CATEGORIES.map(
-          (c) => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${c.emoji} ${c.label}</button>`,
+          (c) => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${chipIcon(c.icon, c.color)}${c.label}</button>`,
         ),
       ].join('');
     };
