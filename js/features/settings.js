@@ -10,6 +10,8 @@ import { icon } from '../ui/icons.js';
 import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
 import { setAI, aiParse } from '../sync/ai.js';
 import { notionSectionHTML, bindNotionSection } from '../sync/notionPanel.js';
+import { dataSafetyHTML, renderDataSafety, markExported } from './dataSafety.js';
+import { syncData } from '../sync/drive.js';
 import { setFocusCfg } from '../ui/focus.js';
 import { setupPin, disablePin, verifyPin, lockNow, setLockAfter, lockSupported } from '../ui/lock.js';
 import { enableNotify, disableNotify, setNotifyOption, testNotify, notifyPermission, notifySupported, isIOS } from '../ui/notify.js';
@@ -190,8 +192,9 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       </div>
       <p class="kbd-hint">ใช้หาช่วงเวลาว่างตอน "วางแผนวันนี้"</p>
       <div class="divider"></div>
+      ${dataSafetyHTML()}
       <div class="field">
-        <span class="field-label">ข้อมูล (บันทึกไว้ในเบราว์เซอร์นี้)</span>
+        <span class="field-label">สำรอง / นำเข้า / ล้างข้อมูล</span>
         <div class="chips">
           ${isEmbedded()
             ? `<p class="muted" style="font-size:13px">การสำรองเป็นไฟล์ใช้ได้เมื่อเปิดจากเว็บจริง</p>`
@@ -310,14 +313,27 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       $('#st-ws', root).addEventListener('change', saveHours);
       $('#st-we', root).addEventListener('change', saveHours);
 
-      $('[data-export]', root)?.addEventListener('click', () => {
+      const doExport = () => {
         const blob = new Blob([store.exportJSON()], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `planner-backup-${todayKey()}.json`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        toast('ดาวน์โหลดไฟล์สำรองแล้ว', { icon: '💾' });
+        markExported();
+        toast('ดาวน์โหลดไฟล์สำรองแล้ว เก็บไฟล์ไว้ในที่ปลอดภัย (เช่น Drive หรืออีเมลตัวเอง)', { icon: '💾', duration: 5000 });
+      };
+      $('[data-export]', root)?.addEventListener('click', doExport);
+      renderDataSafety(root, {
+        onExport: doExport,
+        onBackup: async () => {
+          try {
+            await syncData({ interactive: true });
+            toast('สำรองขึ้น Google Drive แล้ว', { icon: '☁️' });
+          } catch (err) {
+            toast(err.message, { icon: '⚠️', duration: 5000 });
+          }
+        },
       });
 
       $('[data-import]', root).addEventListener('change', async (e) => {

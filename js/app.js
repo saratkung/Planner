@@ -1,7 +1,8 @@
 // ==========================================================
 // app.js — bootstraps the app: navigation, routing, shortcuts
 // ==========================================================
-import { store } from './core/store.js';
+import { store, storeReady } from './core/store.js';
+import { onSaveError } from './core/persist.js';
 import { $, $$ } from './core/utils.js';
 import { overdueCount } from './core/selectors.js';
 import { icon } from './ui/icons.js';
@@ -323,6 +324,23 @@ async function syncAll() {
   }
 }
 
+// ---------- ความปลอดภัยของข้อมูล ----------
+function setupDataSafety() {
+  // บันทึกไม่สำเร็จ (เช่น พื้นที่เต็ม): แจ้งผู้ใช้ (ไม่เกินนาทีละครั้ง)
+  let lastErr = 0;
+  onSaveError(() => {
+    if (Date.now() - lastErr < 60000) return;
+    lastErr = Date.now();
+    toast('บันทึกข้อมูลไม่สำเร็จ พื้นที่ในเครื่องอาจเต็ม', { icon: '⚠️', action: 'ดูพื้นที่', onAction: () => openSettings(), duration: 8000 });
+  });
+  // ไม่ได้สำรองนาน: ชวนสำรอง (หลังเปิดแอปสักพัก)
+  setTimeout(async () => {
+    if (isLocked()) return;
+    const { checkBackupReminder } = await import('./features/dataSafety.js');
+    checkBackupReminder({ onBackup: () => syncAll(), onOpenSettings: () => openSettings() });
+  }, 7000);
+}
+
 // ---------- boot ----------
 function init() {
   splashStep(35, 'กำลังโหลดข้อมูล…');
@@ -350,6 +368,7 @@ function init() {
   setupNotify();
   setupFocus();
   setupNotion();
+  setupDataSafety();
   // ล้างรูปชัดในเครื่องที่ไม่มีผลงานไหนใช้แล้ว (หลังเปิดแอปสักพัก)
   setTimeout(async () => {
     const { cleanupPhotos } = await import('./core/photoStore.js');
@@ -408,4 +427,5 @@ function init() {
   });
 }
 
-init();
+// รอข้อมูลจาก IndexedDB ก่อนเริ่มแอป (ถ้ามีปัญหาก็เริ่มด้วยข้อมูลที่มี)
+storeReady.then(init, init);

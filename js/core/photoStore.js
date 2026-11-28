@@ -108,6 +108,28 @@ export async function bestPhotoURL(f, { fromDrive = true } = {}) {
   }
 }
 
+/** จำนวนและขนาดรูปชัดที่เก็บในเครื่อง */
+export async function photoStats() {
+  try {
+    const d = await db();
+    return await new Promise((resolve) => {
+      let count = 0;
+      let bytes = 0;
+      const req = d.transaction(STORE, 'readonly').objectStore(STORE).openCursor();
+      req.onsuccess = () => {
+        const c = req.result;
+        if (!c) return resolve({ count, bytes });
+        count++;
+        bytes += c.value?.size || 0;
+        c.continue();
+      };
+      req.onerror = () => resolve({ count, bytes });
+    });
+  } catch (_) {
+    return { count: 0, bytes: 0 };
+  }
+}
+
 /** ลบรูปในเครื่องที่ไม่มีผลงานไหนใช้แล้ว */
 export async function cleanupPhotos(usedKeys) {
   try {

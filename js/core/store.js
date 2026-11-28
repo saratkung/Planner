@@ -1,7 +1,8 @@
 // ==========================================================
-// store.js — app state, persistence (localStorage), pub/sub
+// store.js — app state, persistence (IndexedDB + สำเนาใน localStorage), pub/sub
 // ==========================================================
 import { uid, todayKey, toKey, addDays } from './utils.js';
+import { idbGet, idbPut, writeState, writeMirror, flushWrites, requestPersist, storageEstimate, wipeAll } from './persist.js';
 
 const KEY = 'planner.v1';
 const VERSION = 2;
@@ -32,22 +33,78 @@ const defaultSettings = () => ({
 // ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
 const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify', 'ai', 'focus', 'notionLocal'];
 
-let state = load();
+const IDB_KEY = 'state';
+// ⚠️ ตัวแปรทั้งหมดที่ load() ใช้ ต้องประกาศก่อนบรรทัด `let state = load()`
+let loadedFromLocal = false;
+let brokenRaw = null; // ข้อมูลเดิมที่อ่านไม่ได้: เก็บสำรองไว้ก่อน ไม่บันทึกทับ
+let booted = false; // อ่านข้อมูลจาก IndexedDB เสร็จแล้วหรือยัง (ก่อนหน้านั้นไม่บันทึก กันทับข้อมูลจริงด้วยข้อมูลตัวอย่าง)
+let pendingSave = false;
+let backend = 'local'; // 'idb' เมื่อใช้ IndexedDB ได้
+let lastSize = 0;
 const listeners = new Set();
-// เปิดครั้งแรก: บันทึกข้อมูลตัวอย่างไว้ทันที (id ของรายการจะได้ไม่เปลี่ยนเมื่อรีโหลด)
-try {
-  if (!localStorage.getItem(KEY)) queueMicrotask(() => save());
-} catch (_) {}
+let state = load();
 
 function load() {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return normalize(JSON.parse(raw));
-  } catch (e) {
-    console.warn('โหลดข้อมูลไม่สำเร็จ ใช้ข้อมูลตัวอย่างแทน', e);
+    raw = localStorage.getItem(KEY);
+  } catch (_) {}
+  if (raw) {
+    try {
+      const s = normalize(JSON.parse(raw));
+      loadedFromLocal = true;
+      lastSize = raw.length;
+      return s;
+    } catch (e) {
+      brokenRaw = raw;
+      console.warn('อ่านข้อมูลใน localStorage ไม่ได้ (เก็บสำรองไว้ให้แล้ว)', e);
+    }
   }
   return seed();
 }
+
+/**
+ * เปิดแอป: อ่านจาก IndexedDB แล้วใช้ฉบับที่บันทึกล่าสุด
+ * ข้อมูลเก่าที่อยู่แค่ใน localStorage จะถูกย้ายเข้า IndexedDB ให้อัตโนมัติ
+ */
+export const storeReady = (async () => {
+  const localSaved = loadedFromLocal ? state.savedAt || 1 : 0;
+  let rec = null;
+  try {
+    rec = await idbGet(IDB_KEY);
+    backend = 'idb';
+  } catch (_) {
+    backend = 'local';
+  }
+  // ข้อมูลเดิมที่อ่านไม่ได้: เก็บต้นฉบับไว้ก่อนเสมอ (กู้ได้ภายหลัง)
+  if (brokenRaw) {
+    try {
+      localStorage.setItem(`${KEY}.broken`, brokenRaw);
+    } catch (_) {}
+    if (backend === 'idb') await idbPut(`broken-${Date.now()}`, brokenRaw).catch(() => {});
+  }
+  let needSave = !loadedFromLocal; // เปิดครั้งแรก: บันทึกข้อมูลตัวอย่าง (id จะได้ไม่เปลี่ยนเมื่อรีโหลด)
+  if (backend === 'idb') {
+    if (rec?.json && (rec.savedAt || 0) > localSaved) {
+      try {
+        state = normalize(JSON.parse(rec.json));
+        state.savedAt = rec.savedAt;
+        sigs = null;
+        lastSize = rec.json.length;
+        writeMirror(KEY, rec.json);
+        needSave = false;
+      } catch (e) {
+        console.warn('อ่านข้อมูลใน IndexedDB ไม่ได้ ใช้สำเนาใน localStorage แทน', e);
+        await idbPut(`broken-${Date.now()}`, rec.json).catch(() => {});
+        needSave = loadedFromLocal;
+      }
+    } else if (loadedFromLocal) needSave = true; // ย้ายข้อมูลเดิมเข้า IndexedDB / สำเนาใหม่กว่า
+  }
+  if (brokenRaw && !loadedFromLocal && !(rec?.json)) needSave = false;
+  booted = true;
+  if (needSave || pendingSave) save();
+  requestPersist();
+})();
 
 function normalize(data) {
   const s = {
@@ -64,6 +121,7 @@ function normalize(data) {
     deleted: { tasks: {}, events: {}, goals: {}, templates: {}, learnings: {}, portfolio: {}, days: {}, ...(data.deleted || {}) },
     settingsUpdatedAt: data.settingsUpdatedAt || 0,
     demoClearedAt: data.demoClearedAt || 0,
+    savedAt: data.savedAt || 0,
   };
   [...COLLECTIONS].forEach((c) => s[c].forEach((it) => (it.updatedAt = it.updatedAt || it.createdAt || 0)));
   s.settings.gcal = { ...defaultGcal(), ...(s.settings.gcal || {}) };
@@ -155,11 +213,17 @@ function stamp() {
 
 function save() {
   stamp();
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch (e) {
-    console.warn('บันทึกข้อมูลไม่สำเร็จ', e);
+  if (!booted) {
+    pendingSave = true;
+    return;
   }
+  state.savedAt = Date.now();
+  const json = JSON.stringify(state);
+  lastSize = json.length;
+  if (backend === 'idb') {
+    writeState(IDB_KEY, json, state.savedAt);
+    writeMirror(KEY, json);
+  } else writeMirror(KEY, json, { required: true });
 }
 
 function emit(change) {
@@ -171,6 +235,15 @@ export const store = {
   get state() {
     return state;
   },
+
+  /** สถานะที่เก็บข้อมูลในเครื่อง (หน้าตั้งค่า) */
+  async storageInfo() {
+    const est = await storageEstimate();
+    return { backend, dataBytes: new Blob([JSON.stringify(state)]).size, ...est };
+  },
+  flush: () => flushWrites(),
+  /** ล้างข้อมูลทั้งหมดในเครื่อง (ลืม PIN) */
+  wipeAll: () => wipeAll(KEY).then(() => wipeAll(IDB_KEY)),
 
   subscribe(fn) {
     listeners.add(fn);

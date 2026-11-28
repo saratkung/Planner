@@ -159,9 +159,8 @@ export function lockNow() {
     });
     el.classList.remove('behind');
     if (!ok) return;
-    try {
-      localStorage.removeItem('planner.v1');
-    } catch (_) {}
+    const { store } = await import('../core/store.js');
+    await store.wipeAll();
     location.reload();
   });
 }
