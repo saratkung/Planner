@@ -139,6 +139,11 @@ export function openPortfolioReport() {
     size: 720,
     body: `
       <div class="pfr">
+        <button type="button" class="pfr-word" data-r="salary">
+          <span class="pfr-word-ico">${icon('note')}</span>
+          <span><b>แบบรายงานเลื่อนเงินเดือน (.docx)</b><small>ไฟล์ Word ตามแบบฟอร์ม · เลือกรอบ 1 เม.ย. / 1 ต.ค. · พร้อมภาพประกอบ</small></span>
+          ${icon('right')}
+        </button>
         <details class="pfr-profile" ${pf.fullName || store.state.settings.name ? '' : 'open'}>
           <summary>👤 ข้อมูลผู้จัดทำ <span class="muted" id="pfr-who"></span></summary>
           <div class="pfr-grid">
@@ -213,6 +218,10 @@ export function openPortfolioReport() {
         }
         const act = e.target.closest('[data-r]')?.dataset.r;
         if (!act) return;
+        if (act === 'salary') {
+          const { openSalaryReport } = await import('./salaryReport.js');
+          return openSalaryReport();
+        }
         const { range, list } = current();
         if (act === 'print') {
           if (!list.length) return toast('ไม่มีผลงานในช่วงที่เลือก', { icon: '📭' });

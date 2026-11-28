@@ -134,7 +134,7 @@ export async function photoStats() {
 export async function cleanupPhotos(usedKeys) {
   try {
     const keys = await tx('readonly', (s) => s.getAllKeys());
-    const dead = (keys || []).filter((k) => !usedKeys.has(k));
+    const dead = (keys || []).filter((k) => /^[dl]:/.test(k) && !usedKeys.has(k));
     if (dead.length) await tx('readwrite', (s) => dead.forEach((k) => s.delete(k)));
     return dead.length;
   } catch (_) {

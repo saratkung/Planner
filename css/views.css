@@ -2183,3 +2183,56 @@ svg.pf-star { width: 22px; height: 22px; margin-left: auto; flex: none; filter: 
 .ds-list li small { flex-basis: 100%; padding-left: 36px; color: var(--muted); font-size: 12px; }
 .ds-usage > div { flex: 1; min-width: 0; }
 .ds-usage .progress { margin-top: 6px; }
+
+/* แบบรายงานเลื่อนเงินเดือน */
+.pfr-word {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 16px; text-align: left; cursor: pointer;
+  border: 1px solid color-mix(in srgb, #2b579a 30%, var(--border)); background: linear-gradient(110deg, color-mix(in srgb, #2b579a 10%, var(--surface)), var(--surface) 70%);
+  color: var(--text); transition: transform 0.2s var(--ease), box-shadow 0.2s;
+}
+.pfr-word:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.pfr-word b { display: block; font-size: 14.5px; }
+.pfr-word small { display: block; font-size: 12px; color: var(--muted); }
+.pfr-word > span:nth-child(2) { flex: 1; min-width: 0; }
+.pfr-word > svg { width: 18px; height: 18px; color: var(--muted); }
+.pfr-word-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: #fff; flex: none; background: linear-gradient(150deg, #4a7fc9, #2b579a 55%, #1d3f72); box-shadow: 0 6px 14px -7px #2b579a; }
+.pfr-word-ico svg { width: 20px; height: 20px; }
+
+.sr { display: flex; flex-direction: column; gap: 12px; }
+.sr-round { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.sr-year { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.sr-year .select { width: auto; height: 38px; }
+.sr-period { flex-basis: 100%; margin: 0; font-size: 12.5px; }
+.sr-title { font-weight: 600; text-align: center; line-height: 1.6; }
+.sr-portrait { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
+.sr-portrait > div { flex: 1; min-width: 160px; }
+.sr-portrait b { font-size: 13.5px; }
+.sr-portrait p { margin: 0; font-size: 12px; }
+.sr-face { display: grid; place-items: center; width: 46px; height: 58px; border-radius: 10px; overflow: hidden; background: var(--surface); border: 1px dashed var(--border-strong); color: var(--muted); }
+.sr-face img { width: 100%; height: 100%; object-fit: cover; }
+.sr-face svg { width: 22px; height: 22px; }
+.sr-note { font-weight: 400; font-size: 12px; margin-left: 4px; }
+.sr-sec { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 8px; margin-bottom: 8px; }
+.sr-num { font-weight: 700; padding-top: 10px; min-width: 22px; }
+.sr-sec .textarea { min-height: 0; font-size: 13.5px; line-height: 1.5; font-weight: 600; }
+.sr-items-head { flex-wrap: wrap; }
+.sr-filter { margin-left: auto; }
+.sr-filter .segmented button { font-size: 12px; padding: 0 10px; height: 30px; }
+.sr-items { display: flex; flex-direction: column; gap: 6px; max-height: min(46vh, 460px); overflow-y: auto; padding-right: 4px; }
+.sr-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); transition: opacity 0.2s; }
+.sr-item.off { opacity: 0.5; }
+.sr-item .pp-check { --c: var(--accent); }
+.sr-item-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12px; }
+.sr-sec-sel { width: auto; height: 28px; font-size: 12px; padding: 0 26px 0 8px; }
+.sr-ph { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); }
+.sr-ph svg { width: 13px; height: 13px; }
+.sr-line { width: 100%; margin-top: 4px; border: 0; resize: none; overflow: hidden; background: transparent; font: inherit; font-size: 13.5px; line-height: 1.55; color: var(--text); padding: 2px 0; border-radius: 6px; }
+.sr-line:focus { outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); background: var(--surface-2); }
+.sr-empty { font-size: 13px; }
+.sr-opts { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+.sr-conduct { display: flex; flex-direction: column; gap: 8px; padding-left: 46px; }
+.sr-progress { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); font-size: 13px; }
+@media (max-width: 760px) {
+  .sr-conduct { padding-left: 0; }
+  .sr-filter { margin-left: 0; flex-basis: 100%; }
+}

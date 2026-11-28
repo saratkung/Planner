@@ -2,7 +2,7 @@
 // sw.js — service worker: ทำให้แอปเปิดได้แม้ไม่มีอินเทอร์เน็ต
 // เปลี่ยน VERSION ทุกครั้งที่แก้ไฟล์ เพื่อให้มือถือโหลดเวอร์ชันใหม่
 // ==========================================================
-const VERSION = 'planner-v31';
+const VERSION = 'planner-v32';
 const APP_SHELL = [
   './',
   './index.html',
@@ -35,6 +35,7 @@ const APP_SHELL = [
   './js/core/docx.js',
   './js/core/photoStore.js',
   './js/core/persist.js',
+  './js/core/docxWriter.js',
   './js/ui/confetti.js',
   './js/ui/icons.js',
   './js/ui/modal.js',
@@ -54,6 +55,7 @@ const APP_SHELL = [
   './js/forms/portfolioForm.js',
   './js/forms/portfolioReport.js',
   './js/forms/portfolioPaste.js',
+  './js/forms/salaryReport.js',
   './js/features/calendar.js',
   './js/features/dashboard.js',
   './js/features/goals.js',

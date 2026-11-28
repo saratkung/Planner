@@ -29,6 +29,7 @@ const defaultSettings = () => ({
   // Notion: ตั้งค่าร่วมทุกเครื่อง (หน้าและตารางที่ใช้) / notionLocal: รหัสใช้งานของเครื่องนี้
   notion: { enabled: false, pageId: '', pageUrl: '', title: '', dbs: {}, auto: true, archivedAt: 0, kinds: { portfolio: true, learnings: true, meetings: true, tasks: true } },
   notionLocal: { code: '', lastSync: null, lastError: '' },
+  salaryReport: null, // หัวข้อ/ตัวเลือกของแบบรายงานเลื่อนเงินเดือน (null = ค่าเริ่มต้น)
 });
 // ค่าที่เป็นของเครื่องนี้ ไม่ทับตอนนำเข้า/กู้คืนข้อมูล
 const DEVICE_KEYS = ['gcal', 'backup', 'lock', 'notify', 'ai', 'focus', 'notionLocal'];
@@ -152,7 +153,7 @@ function normalize(data) {
 
 // ---------- ติดตามการเปลี่ยนแปลง (สำหรับซิงก์ระหว่างเครื่อง) ----------
 // เทียบกับครั้งก่อน: รายการที่เปลี่ยนได้ updatedAt ใหม่, รายการที่หายไปถูกบันทึกว่า "ลบ"
-const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd', 'profile', 'notion'];
+const SHARED_SETTINGS = ['name', 'theme', 'weekStart', 'workStart', 'workEnd', 'profile', 'notion', 'salaryReport'];
 let sigs = null;
 const sigOf = (o) => {
   const { updatedAt, ...rest } = o || {};
