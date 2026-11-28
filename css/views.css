@@ -2236,3 +2236,26 @@ svg.pf-star { width: 22px; height: 22px; margin-left: auto; flex: none; filter: 
   .sr-conduct { padding-left: 0; }
   .sr-filter { margin-left: 0; flex-basis: 100%; }
 }
+
+/* ตั้งค่าเมนู */
+.nv-preview { display: flex; gap: 4px; padding: 8px; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+.nv-preview span { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 12px; color: var(--accent-ink); background: var(--accent-soft); animation: popIn 0.35s var(--spring) both; }
+.nv-preview span.more { background: none; color: var(--muted); }
+.nv-preview svg { width: 18px; height: 18px; }
+.nv-preview small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.nv-sum { margin: 0; font-size: 12.5px; }
+.nv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nv-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); transition: opacity 0.2s, background 0.2s; }
+.nv-row.off { opacity: 0.55; background: var(--surface-2); }
+.nv-row .switch-row { margin-left: 4px; }
+.nv-move { display: flex; flex-direction: column; }
+.nv-move .icon-btn.sm { width: 24px; height: 18px; border-radius: 6px; }
+.nv-move .icon-btn.sm svg { width: 14px; height: 14px; transform: rotate(90deg); }
+.nv-move .icon-btn.sm:disabled { opacity: 0.25; }
+.nv-label { flex: 1; min-width: 0; font-weight: 600; font-size: 14px; display: flex; flex-direction: column; line-height: 1.25; }
+.nv-label small { font-weight: 400; font-size: 11px; color: var(--muted); }
+.nv-tab { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 99px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 12px; font-weight: 600; transition: all 0.2s var(--ease); }
+.nv-tab svg { width: 13px; height: 13px; }
+.nv-tab.on { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-ink); }
+.nv-tab:disabled { opacity: 0.4; }
+@media (max-width: 420px) { .nv-tab span { display: none; } .nv-tab { padding: 0 8px; } }

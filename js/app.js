@@ -36,10 +36,23 @@ import { openPortfolioForm } from './forms/portfolioForm.js';
 import { openPortfolioPaste } from './forms/portfolioPaste.js';
 import { openModal } from './ui/modal.js';
 import { openWeekly } from './features/weekly.js';
+import { navCfg, navSig } from './core/navConfig.js';
 
-const FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals, learn, portfolio];
-// แถบเมนูมือถือ: หน้าที่ใช้บ่อย + ปุ่ม "เพิ่มเติม" สำหรับหน้าที่เหลือ
-const MOBILE_TABS = ['dashboard', 'tasks', 'meetings', 'calendar', 'learn'];
+const ALL_FEATURES = [dashboard, tasks, meetings, calendar, schedule, goals, learn, portfolio];
+const byId = (id) => ALL_FEATURES.find((f) => f.id === id);
+// เมนูตามที่ผู้ใช้เลือก (ตั้งค่า → เมนู): หน้าที่แสดง และหน้าที่อยู่บนแถบล่างมือถือ
+let FEATURES = ALL_FEATURES;
+let MOBILE_TABS = [];
+let lastNav = '';
+function applyNavCfg() {
+  const c = navCfg();
+  FEATURES = c.visible.map(byId).filter(Boolean);
+  MOBILE_TABS = c.tabs;
+  lastNav = navSig();
+}
+applyNavCfg();
+// ปุ่มลัดในเมนู "สร้างใหม่" ที่ผูกกับหน้า (ซ่อนตามหน้า)
+const QUICK_PAGE = { task: 'tasks', learn: 'learn', portfolio: 'portfolio', meeting: 'meetings', goal: 'goals' };
 let viewEl = $('#view');
 let active = null; // { feature, instance }
 
@@ -50,8 +63,10 @@ function buildNav() {
       f.id === 'tasks' ? '<b class="badge" hidden></b>' : ''
     }</a>`;
   $('#nav').innerHTML = `<span class="nav-indicator"></span>${FEATURES.map(link).join('')}`;
-  $('#tabbar').innerHTML = `<span class="nav-indicator"></span>${FEATURES.filter((f) => MOBILE_TABS.includes(f.id)).map(link).join('')}
+  const tabs = MOBILE_TABS.map(byId).filter(Boolean);
+  $('#tabbar').innerHTML = `<span class="nav-indicator"></span>${tabs.map(link).join('')}
     <a href="#" class="tab-more" data-more aria-haspopup="dialog">${icon('grid')}<span>เพิ่มเติม</span></a>`;
+  $('#tabbar').style.setProperty('--tabs', tabs.length + 1);
   $('#btn-settings').innerHTML = `${icon('settings')}<span class="label">ตั้งค่า</span>`;
   $('#btn-settings-m').innerHTML = icon('settings');
   $('#btn-quick').innerHTML = `${icon('plus')}<span class="label">สร้างใหม่</span>`;
@@ -65,6 +80,7 @@ function buildNav() {
     ['event', 'calendar', 'นัดหมาย / ตาราง', '#ec4899', 'E'],
     ['goal', 'target', 'เป้าหมาย', '#10b981', 'G'],
   ]
+    .filter(([id]) => !QUICK_PAGE[id] || FEATURES.some((f) => f.id === QUICK_PAGE[id]))
     .map(
       ([id, ic, label, c, k]) =>
         `<button role="menuitem" data-quick="${id}"><span class="menu-ico" style="--c:${c};--c-soft:color-mix(in srgb, ${c} 14%, transparent)">${icon(ic)}</span>${label}<kbd>${k}</kbd></button>`,
@@ -103,7 +119,8 @@ function updateHeader() {
 // ---------- routing ----------
 function route() {
   const id = location.hash.replace(/^#\/?/, '') || 'dashboard';
-  const feature = FEATURES.find((f) => f.id === id) || dashboard;
+  // หน้าที่ซ่อนจากเมนูยังเปิดได้ (เช่น จากผลการค้นหา)
+  const feature = ALL_FEATURES.find((f) => f.id === id) || dashboard;
   if (active?.feature === feature) return;
 
   active?.instance?.unmount?.();
@@ -385,6 +402,16 @@ function init() {
 
   store.subscribe((change) => {
     if (change.type === 'settings') renderThemeBtn();
+    // เปลี่ยนเมนูที่ใช้ (ตั้งค่า หรือซิงก์จากอีกเครื่อง): วาดเมนูใหม่
+    if ((change.type === 'settings' || change.type === 'merge' || change.type === 'reset') && navSig() !== lastNav) {
+      applyNavCfg();
+      buildNav();
+      if (active) {
+        $$('[data-route]').forEach((a) => a.classList.toggle('active', a.dataset.route === active.feature.id));
+        $('#tabbar [data-more]')?.classList.toggle('active', !MOBILE_TABS.includes(active.feature.id));
+      }
+      requestAnimationFrame(moveIndicators);
+    }
     active?.instance?.update?.(change);
     updateBadge();
     updateHeader();

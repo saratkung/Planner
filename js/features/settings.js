@@ -11,6 +11,7 @@ import { gcalSectionHTML, bindGcalSection } from '../sync/gcalPanel.js';
 import { setAI, aiParse } from '../sync/ai.js';
 import { notionSectionHTML, bindNotionSection } from '../sync/notionPanel.js';
 import { dataSafetyHTML, renderDataSafety, markExported } from './dataSafety.js';
+import { navSectionHTML, bindNavSection } from './navSettings.js';
 import { syncData } from '../sync/drive.js';
 import { setFocusCfg } from '../ui/focus.js';
 import { setupPin, disablePin, verifyPin, lockNow, setLockAfter, lockSupported } from '../ui/lock.js';
@@ -148,6 +149,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
     <div class="form-grid">
       <div id="st-install">${installSection()}</div>
       ${gcalSectionHTML()}
+      ${navSectionHTML()}
       ${notifySectionHTML()}
       ${focusSectionHTML()}
       ${aiSectionHTML()}
@@ -234,6 +236,7 @@ export function openSettings({ focusInstall = false, focusGcal = false } = {}) {
       if (focusInstall) inst.firstElementChild.classList.add('pop');
       offGcal = bindGcalSection(root, { closeSettings: close });
       offNotion = bindNotionSection(root);
+      bindNavSection(root);
       $('#lk-after', root)?.addEventListener('change', (e) => setLockAfter(e.target.value));
       $('#nt-lead', root)?.addEventListener('change', (e) => setNotifyOption({ lead: Number(e.target.value) }));
       $('#ai-on', root)?.addEventListener('change', (e) => setAI({ enabled: e.target.checked }));

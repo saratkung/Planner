@@ -24,9 +24,11 @@ import { openWeekly, weeklyCardHTML } from './weekly.js';
 import { startFocus } from '../ui/focus.js';
 import { processLearning, saveLearnings, learningsBetween, learnStreak, learnCat } from '../core/learn.js';
 import { openLearnReport } from '../forms/learnReport.js';
+import { isVisible } from '../core/navConfig.js';
 
 /** แถบ "วันนี้เรียนรู้อะไร?" จดเร็ว ๆ จากหน้าแรก */
 function learnStrip() {
+  if (!isVisible('learn')) return '';
   const n = learningsBetween(todayKey(), todayKey()).length;
   const st = learnStreak();
   return `<section class="card ln-strip">
